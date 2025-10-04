@@ -104,7 +104,7 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
   if (featured && data.length === 1) {
     const risk = data[0];
     const config = riskConfig[risk.risk_type];
-    const levelInfo = levelConfig[risk.level];
+    const levelInfo = levelConfig[risk.level] || levelConfig.low;
     const Icon = config.icon;
 
     return (
@@ -149,7 +149,7 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
       {data.map((risk) => {
         const config = riskConfig[risk.risk_type];
         const Icon = config.icon;
-        const levelInfo = levelConfig[risk.level];
+        const levelInfo = levelConfig[risk.level] || levelConfig.low;
 
         return (
           <Card
