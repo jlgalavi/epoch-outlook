@@ -30,7 +30,11 @@ const riskConfig = {
   very_hot: {
     label: "Very Hot",
     icon: Flame,
-    colorClass: "bg-gradient-to-br from-risk-hot/10 to-risk-hot/5 border-risk-hot/20",
+    colorClass: {
+      low: "bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-950/30 dark:to-orange-900/20 border-orange-300 dark:border-orange-800",
+      medium: "bg-gradient-to-br from-orange-200 to-orange-100 dark:from-orange-900/50 dark:to-orange-800/30 border-orange-400 dark:border-orange-700",
+      high: "bg-gradient-to-br from-red-500/90 to-orange-500/80 dark:from-red-600/90 dark:to-orange-600/80 border-red-600 dark:border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.5)]",
+    },
     iconColor: "text-risk-hot",
     animation: "animate-pulse",
     emoji: "🔥",
@@ -39,7 +43,11 @@ const riskConfig = {
   very_cold: {
     label: "Very Cold",
     icon: Snowflake,
-    colorClass: "bg-gradient-to-br from-risk-cold/10 to-risk-cold/5 border-risk-cold/20",
+    colorClass: {
+      low: "bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-300 dark:border-blue-800",
+      medium: "bg-gradient-to-br from-blue-200 to-blue-100 dark:from-blue-900/50 dark:to-blue-800/30 border-blue-400 dark:border-blue-700",
+      high: "bg-gradient-to-br from-blue-500/90 to-cyan-500/80 dark:from-blue-600/90 dark:to-cyan-600/80 border-blue-600 dark:border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.5)]",
+    },
     iconColor: "text-risk-cold",
     animation: "animate-[spin_3s_linear_infinite]",
     emoji: "❄️",
@@ -48,7 +56,11 @@ const riskConfig = {
   very_windy: {
     label: "Very Windy",
     icon: Wind,
-    colorClass: "bg-gradient-to-br from-risk-wind/10 to-risk-wind/5 border-risk-wind/20",
+    colorClass: {
+      low: "bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-950/30 dark:to-slate-900/20 border-slate-300 dark:border-slate-800",
+      medium: "bg-gradient-to-br from-slate-200 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/30 border-slate-400 dark:border-slate-700",
+      high: "bg-gradient-to-br from-slate-600/90 to-gray-500/80 dark:from-slate-700/90 dark:to-gray-600/80 border-slate-700 dark:border-slate-600 shadow-[0_0_30px_rgba(100,116,139,0.5)]",
+    },
     iconColor: "text-risk-wind",
     animation: "animate-[bounce_1s_ease-in-out_infinite]",
     emoji: "💨",
@@ -57,7 +69,11 @@ const riskConfig = {
   very_wet: {
     label: "Very Wet",
     icon: CloudRain,
-    colorClass: "bg-gradient-to-br from-risk-wet/10 to-risk-wet/5 border-risk-wet/20",
+    colorClass: {
+      low: "bg-gradient-to-br from-sky-100 to-sky-50 dark:from-sky-950/30 dark:to-sky-900/20 border-sky-300 dark:border-sky-800",
+      medium: "bg-gradient-to-br from-sky-200 to-sky-100 dark:from-sky-900/50 dark:to-sky-800/30 border-sky-400 dark:border-sky-700",
+      high: "bg-gradient-to-br from-sky-600/90 to-blue-600/80 dark:from-sky-700/90 dark:to-blue-700/80 border-sky-700 dark:border-sky-600 shadow-[0_0_30px_rgba(14,165,233,0.5)]",
+    },
     iconColor: "text-risk-wet",
     animation: "animate-[bounce_2s_ease-in-out_infinite]",
     emoji: "💧",
@@ -66,7 +82,11 @@ const riskConfig = {
   very_uncomfortable: {
     label: "Very Uncomfortable",
     icon: ThermometerSun,
-    colorClass: "bg-gradient-to-br from-risk-uncomfortable/10 to-risk-uncomfortable/5 border-risk-uncomfortable/20",
+    colorClass: {
+      low: "bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/30 dark:to-amber-900/20 border-amber-300 dark:border-amber-800",
+      medium: "bg-gradient-to-br from-amber-200 to-amber-100 dark:from-amber-900/50 dark:to-amber-800/30 border-amber-400 dark:border-amber-700",
+      high: "bg-gradient-to-br from-amber-500/90 to-yellow-500/80 dark:from-amber-600/90 dark:to-yellow-600/80 border-amber-600 dark:border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.5)]",
+    },
     iconColor: "text-risk-uncomfortable",
     animation: "animate-pulse",
     emoji: "😓",
@@ -88,10 +108,14 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
     const Icon = config.icon;
 
     return (
-      <Card className={cn("overflow-hidden border-2 transition-all hover:shadow-2xl", config.colorClass)}>
+      <Card className={cn("overflow-hidden border-2 transition-all hover:shadow-2xl", config.colorClass[risk.level])}>
         <CardContent className="p-8">
           <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className={cn("relative p-8 rounded-full bg-card/50", config.iconColor)}>
+            <div className={cn(
+              "relative p-8 rounded-full",
+              risk.level === "high" ? "bg-white/90 dark:bg-black/50" : "bg-card/50",
+              config.iconColor
+            )}>
               <Icon className={cn("h-20 w-20", config.animation)} />
               <div className="absolute -top-2 -right-2 text-4xl">{config.emoji}</div>
             </div>
@@ -132,12 +156,16 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
             key={risk.risk_type}
             className={cn(
               "group transition-all hover:scale-105 hover:shadow-xl border-2 overflow-hidden",
-              config.colorClass
+              config.colorClass[risk.level]
             )}
           >
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between mb-3">
-                <div className={cn("relative p-3 rounded-xl bg-card/50", config.iconColor)}>
+                <div className={cn(
+                  "relative p-3 rounded-xl",
+                  risk.level === "high" ? "bg-white/90 dark:bg-black/50" : "bg-card/50",
+                  config.iconColor
+                )}>
                   <Icon className={cn("h-8 w-8", config.animation)} />
                   <div className="absolute -top-1 -right-1 text-xl">{config.emoji}</div>
                 </div>
