@@ -1,0 +1,4 @@
+project_id = "inkdnbjbnhvqdfibsseq"
+
+[functions.climate-assistant]
+verify_jwt = false

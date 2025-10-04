@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Results from "./pages/Results";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import { ClimateAssistant } from "@/components/ClimateAssistant";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ClimateAssistant />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
