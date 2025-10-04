@@ -22,12 +22,15 @@ serve(async (req) => {
 Your role is to help users find climate outlook data for specific locations and dates.
 
 When users ask about climate data:
-- Extract location names and dates from their queries
+- ALWAYS extract location names and dates from their queries using the extract_search_params function
+- Extract any location mentioned (cities, countries, regions)
+- Convert relative dates (like "next month", "February 2026") to specific dates in YYYY-MM-DD format
+- If only month/year is mentioned, use the 15th of that month
+- Today's date is ${new Date().toISOString().split('T')[0]}
 - Be warm, encouraging, and make climate data feel accessible
-- Explain technical terms in simple language
 - Keep responses concise and friendly
 
-You can extract search parameters when users mention locations and dates.`;
+After extracting the parameters, briefly acknowledge what you found and ask if they want to proceed.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -52,11 +55,11 @@ You can extract search parameters when users mention locations and dates.`;
                 properties: {
                   location: {
                     type: "string",
-                    description: "The location name mentioned by the user"
+                    description: "The location name mentioned by the user (city, country, or region)"
                   },
                   date: {
                     type: "string",
-                    description: "The date in YYYY-MM-DD format. Convert relative dates to absolute dates based on today's date."
+                    description: "The date in YYYY-MM-DD format. Convert relative dates (like 'next month', 'February 2026') to absolute dates. If only month/year is given, use the 15th of that month. Today is " + new Date().toISOString().split('T')[0]
                   }
                 },
                 required: [],
@@ -101,14 +104,20 @@ You can extract search parameters when users mention locations and dates.`;
     }
 
     const data = await response.json();
+    console.log("AI Response:", JSON.stringify(data, null, 2));
+    
     const aiMessage = data.choices?.[0]?.message;
     
     let extractedParams = null;
     if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
       const toolCall = aiMessage.tool_calls[0];
+      console.log("Tool call detected:", JSON.stringify(toolCall, null, 2));
       if (toolCall.function.name === "extract_search_params") {
         extractedParams = JSON.parse(toolCall.function.arguments);
+        console.log("Extracted params:", extractedParams);
       }
+    } else {
+      console.log("No tool calls in response");
     }
 
     return new Response(
