@@ -1,180 +1,248 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LocationPicker } from "@/components/LocationPicker";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, CalendarIcon, MapPin, Settings2 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send, Loader2, Search, Calendar, MapPin } from "lucide-react";
+import { AnimatedCharacter } from "@/components/AnimatedCharacter";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { LocationPicker } from "@/components/LocationPicker";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+  action?: {
+    type: "search";
+    location?: string;
+    date?: Date;
+  };
+}
 
 const Index = () => {
   const navigate = useNavigate();
-  const [location, setLocation] = useState<{ lat: number; lon: number }>();
-  const [date, setDate] = useState<Date>();
-  const [window, setWindow] = useState(15);
-  const [units, setUnits] = useState<"metric" | "imperial">("metric");
-  const [error, setError] = useState("");
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const { toast } = useToast();
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content: "Hi! I'm Clima, your climate research assistant 🌤️\n\nI can help you search for climate outlooks for any location and date. Just tell me what you want to know!",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [characterMood, setCharacterMood] = useState<"happy" | "thinking" | "excited">("happy");
+  
+  // Search state
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [showQuickSearch, setShowQuickSearch] = useState(false);
 
-  const handleGetOutlook = () => {
-    setError("");
-
-    if (!location) {
-      setError("Please select a location on the map.");
-      return;
-    }
-
-    if (!date) {
-      setError("Please select a date.");
-      return;
-    }
-
+  const performSearch = (location: { lat: number; lon: number }, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    navigate(
-      `/results?lat=${location.lat}&lon=${location.lon}&date=${dateStr}&window=${window}&units=${units}`
-    );
+    const locationStr = `${location.lat},${location.lon}`;
+    navigate(`/results?location=${encodeURIComponent(locationStr)}&date=${dateStr}`);
   };
 
+  const sendMessage = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+    setCharacterMood("thinking");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("climate-assistant", {
+        body: { 
+          message: input,
+          context: "home_search"
+        },
+      });
+
+      if (error) throw error;
+
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data.reply || "I'm sorry, I couldn't process that request.",
+      };
+      
+      // Check if the response suggests a search
+      if (data.suggestedAction?.type === "search") {
+        setShowQuickSearch(true);
+        assistantMessage.content += "\n\nWould you like to search now? Use the quick search below!";
+      }
+      
+      setMessages((prev) => [...prev, assistantMessage]);
+      setCharacterMood("happy");
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to get response from Clima. Please try again.",
+        variant: "destructive",
+      });
+      setCharacterMood("happy");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const handleQuickSearch = () => {
+    if (selectedLocation && selectedDate) {
+      performSearch(selectedLocation, selectedDate);
+    } else {
+      toast({
+        title: "Missing information",
+        description: "Please select both a location and date for your search.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isLoading) {
+      setCharacterMood("thinking");
+    } else {
+      setCharacterMood("happy");
+    }
+  }, [isLoading]);
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-[image:var(--gradient-hero)] text-white py-16 px-4">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30" />
-        <div className="max-w-4xl mx-auto text-center relative">
-          <h1 className="text-5xl font-bold mb-4">Climate Outlook</h1>
-          <p className="text-xl text-white/90">
-            Long-range climate-based outlook for your location
-          </p>
-        </div>
-      </div>
-
-      {/* Search Panel */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <Card className="shadow-2xl border-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Select Location & Date
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Location */}
-            <div className="space-y-2">
-              <Label>Location</Label>
-              <LocationPicker value={location} onChange={setLocation} />
-            </div>
-
-            {/* Date */}
-            <div className="space-y-2">
-              <Label>Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Advanced Options */}
-            <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full gap-2">
-                  <Settings2 className="h-4 w-4" />
-                  Advanced Options
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="window">Window (days)</Label>
-                    <Input
-                      id="window"
-                      type="number"
-                      min={1}
-                      max={30}
-                      value={window}
-                      onChange={(e) => setWindow(Number(e.target.value))}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      ±{window} days around selected date
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="units">Units</Label>
-                    <select
-                      id="units"
-                      value={units}
-                      onChange={(e) =>
-                        setUnits(e.target.value as "metric" | "imperial")
-                      }
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="metric">Metric</option>
-                      <option value="imperial">Imperial</option>
-                    </select>
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Error */}
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* CTA */}
-            <Button
-              onClick={handleGetOutlook}
-              size="lg"
-              className="w-full text-lg"
-            >
-              Get Climate Outlook
-            </Button>
-
-            {/* Disclaimer */}
-            <p className="text-xs text-muted-foreground text-center mt-4">
-              This is a long-range outlook based on historical climate patterns. This is not a short-term forecast.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Quick Links */}
-        <div className="mt-8 text-center">
-          <Button
-            variant="link"
-            onClick={() => navigate("/about")}
-            className="text-primary"
-          >
-            Learn about our methodology →
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
+      {/* Header */}
+      <header className="w-full py-4 px-6 border-b bg-background/80 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Climate Outlook
+            </h1>
+          </div>
+          <Button variant="ghost" onClick={() => navigate("/about")}>
+            About
           </Button>
         </div>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          {/* Left: Character */}
+          <div className="flex flex-col items-center justify-center gap-6 lg:sticky lg:top-24">
+            <AnimatedCharacter isSpeaking={isLoading} mood={characterMood} />
+            <div className="text-center animate-fade-in">
+              <h2 className="text-3xl font-bold mb-2">Meet Clima</h2>
+              <p className="text-muted-foreground">
+                Your AI-powered climate research companion
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Chat Interface */}
+          <Card className="flex flex-col h-[600px] shadow-2xl animate-fade-in">
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-6">
+              <div className="space-y-4">
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-2xl p-4 ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground shadow-lg"
+                          : "bg-muted shadow-md"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start animate-fade-in">
+                    <div className="bg-muted rounded-2xl p-4 shadow-md">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+
+            {/* Quick Search Panel */}
+            {showQuickSearch && (
+              <div className="p-4 border-t bg-muted/30 animate-slide-in-right">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Quick Search
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <LocationPicker
+                      value={selectedLocation || undefined}
+                      onChange={setSelectedLocation}
+                      searchEnabled={true}
+                    />
+                    <div className="flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Select date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          disabled={(date) => date < new Date()}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    </div>
+                  </div>
+                  <Button onClick={handleQuickSearch} className="w-full" disabled={!selectedLocation || !selectedDate}>
+                    <Search className="h-4 w-4 mr-2" />
+                    Get Climate Outlook
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="p-4 border-t">
+              <div className="flex gap-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask me about climate data, locations, or trends..."
+                  disabled={isLoading}
+                  className="text-base"
+                />
+                <Button onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon" className="shrink-0">
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Try: "What's the weather outlook for Miami next month?"
+              </p>
+            </div>
+          </Card>
+        </div>
+      </main>
     </div>
   );
 };
