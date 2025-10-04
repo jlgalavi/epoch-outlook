@@ -149,25 +149,27 @@ const Results = () => {
     );
   }
 
-  // Prepare temperature chart data
+  // Prepare temperature range chart data (min to max)
+  const tMinData = data.summary.find(s => s.var === 't_min');
+  const tMaxData = data.summary.find(s => s.var === 't_max');
   const tempData = data.summary.find(s => s.var === 't_mean');
-  const tempChartData = tempData ? [
-    { label: 'p10', value: tempData.p10, name: '10th' },
-    { label: 'p25', value: tempData.p25, name: '25th' },
-    { label: 'p50', value: tempData.p50, name: 'Median' },
-    { label: 'p75', value: tempData.p75, name: '75th' },
-    { label: 'p90', value: tempData.p90, name: '90th' },
-  ] : [];
+  
+  const tempChartData = [
+    { 
+      name: 'Expected Temperature',
+      low: tMinData?.p50 || 0,
+      high: tMaxData?.p50 || 0,
+      mean: tempData?.p50 || 0
+    }
+  ];
 
-  // Prepare precipitation chart data
+  // Prepare precipitation simple data
   const precipData = data.summary.find(s => s.var === 'precip_mm');
-  const precipChartData = precipData ? [
-    { label: 'p10', value: precipData.p10, name: '10th' },
-    { label: 'p25', value: precipData.p25, name: '25th' },
-    { label: 'p50', value: precipData.p50, name: 'Median' },
-    { label: 'p75', value: precipData.p75, name: '75th' },
-    { label: 'p90', value: precipData.p90, name: '90th' },
-  ] : [];
+  const precipProb = data.probabilities.find(p => p.metric === 'precip_mm' && p.threshold >= 1);
+  const precipChartData = [
+    { name: 'No Rain', value: 100 - (precipProb?.probability_percent || 0), fill: 'hsl(var(--muted))' },
+    { name: 'Rain Expected', value: precipProb?.probability_percent || 0, fill: 'hsl(var(--risk-wet))' }
+  ];
 
   // Get highest risk for featured display
   const highestRisk = data.risk_labels.reduce((prev, current) => {
@@ -223,37 +225,30 @@ const Results = () => {
             <CardContent className="pt-6">
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <span className="text-2xl">🌡️</span>
-                Temperature Distribution
+                Temperature Range
               </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={tempChartData}>
-                  <defs>
-                    <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--risk-hot))" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="hsl(var(--risk-hot))" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
+              <div className="flex items-center justify-center gap-8 py-8">
+                <div className="text-center">
+                  <div className="text-sm text-muted-foreground mb-2">Low</div>
+                  <div className="text-4xl font-bold text-blue-500">
+                    {tMinData?.p50.toFixed(1)}°
+                  </div>
+                </div>
+                <div className="relative h-32 w-px">
+                  <div 
+                    className="absolute inset-0 bg-gradient-to-b from-blue-500 via-yellow-500 to-red-500 rounded-full"
+                    style={{ width: '4px', left: '-1.5px' }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="hsl(var(--risk-hot))" 
-                    fill="url(#tempGradient)" 
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-              <p className="text-sm text-muted-foreground mt-4 text-center">
-                Mean: {tempData?.mean.toFixed(1)}°C ± {tempData?.std.toFixed(1)}°C
+                </div>
+                <div className="text-center">
+                  <div className="text-sm text-muted-foreground mb-2">High</div>
+                  <div className="text-4xl font-bold text-red-500">
+                    {tMaxData?.p50.toFixed(1)}°
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground text-center">
+                Average: {tempData?.p50.toFixed(1)}°C
               </p>
             </CardContent>
           </Card>
@@ -263,35 +258,38 @@ const Results = () => {
             <CardContent className="pt-6">
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <span className="text-2xl">💧</span>
-                Precipitation Probability
+                Chance of Rain
               </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={precipChartData}>
-                  <defs>
-                    <linearGradient id="precipGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--risk-wet))" stopOpacity={0.9}/>
-                      <stop offset="95%" stopColor="hsl(var(--risk-wet))" stopOpacity={0.6}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="value" 
-                    fill="url(#precipGradient)" 
-                    radius={[8, 8, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-              <p className="text-sm text-muted-foreground mt-4 text-center">
-                Mean: {precipData?.mean.toFixed(1)} mm/day ± {precipData?.std.toFixed(1)} mm/day
+              <div className="flex items-center justify-center py-8">
+                <div className="relative w-48 h-48">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle
+                      cx="96"
+                      cy="96"
+                      r="80"
+                      stroke="hsl(var(--muted))"
+                      strokeWidth="16"
+                      fill="none"
+                    />
+                    <circle
+                      cx="96"
+                      cy="96"
+                      r="80"
+                      stroke="hsl(var(--risk-wet))"
+                      strokeWidth="16"
+                      fill="none"
+                      strokeDasharray={`${(precipProb?.probability_percent || 0) * 5.03} 502.4`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="text-5xl font-bold">{precipProb?.probability_percent || 0}%</div>
+                    <div className="text-sm text-muted-foreground mt-1">Rain Chance</div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground text-center">
+                Expected: {precipData?.p50.toFixed(1)} mm/day
               </p>
             </CardContent>
           </Card>
