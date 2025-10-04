@@ -98,22 +98,92 @@ const Results = () => {
       container: mapContainer.current,
       style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
       center: [lon, lat],
-      zoom: 8,
+      zoom: 6,
     });
 
-    new maplibregl.Marker({ color: "hsl(215, 70%, 45%)" })
+    map.current.on('load', () => {
+      if (!map.current) return;
+
+      // Add temperature heatmap radius
+      const tempValue = tempData?.p50 || 25;
+      const tempNormalized = Math.max(0, Math.min(100, ((tempValue + 10) / 60) * 100));
+      
+      // Add temperature zone circle
+      map.current.addSource('temp-zone', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [lon, lat]
+          },
+          properties: {
+            temp: tempValue
+          }
+        }
+      });
+
+      map.current.addLayer({
+        id: 'temp-heatmap',
+        type: 'circle',
+        source: 'temp-zone',
+        paint: {
+          'circle-radius': 80,
+          'circle-color': [
+            'interpolate',
+            ['linear'],
+            ['get', 'temp'],
+            -10, '#3b82f6',
+            0, '#60a5fa',
+            15, '#fbbf24',
+            25, '#f97316',
+            35, '#ef4444'
+          ],
+          'circle-opacity': 0.3,
+          'circle-blur': 1
+        }
+      });
+
+      // Add precipitation indicator
+      const precipChance = precipProb?.probability_percent || 0;
+      if (precipChance > 20) {
+        map.current.addLayer({
+          id: 'precip-zone',
+          type: 'circle',
+          source: 'temp-zone',
+          paint: {
+            'circle-radius': 60,
+            'circle-color': '#0ea5e9',
+            'circle-opacity': precipChance / 200,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#0ea5e9',
+            'circle-stroke-opacity': 0.5,
+          }
+        });
+      }
+    });
+
+    // Add location marker
+    new maplibregl.Marker({ 
+      color: tempData && tempData.p50 > 30 ? "hsl(0, 70%, 50%)" : 
+             tempData && tempData.p50 < 10 ? "hsl(210, 70%, 50%)" :
+             "hsl(25, 70%, 50%)" 
+    })
       .setLngLat([lon, lat])
       .setPopup(
-        new maplibregl.Popup().setHTML(
-          `<div class="p-2"><strong>Selected Location</strong><br/>${lat.toFixed(
-            4
-          )}°N, ${lon.toFixed(4)}°E</div>`
+        new maplibregl.Popup({ offset: 25 }).setHTML(
+          `<div class="p-2">
+            <strong>Selected Location</strong><br/>
+            ${lat.toFixed(2)}°, ${lon.toFixed(2)}°<br/>
+            <span class="text-sm">Temp: ${tempData?.p50.toFixed(1)}°C</span>
+          </div>`
         )
       )
       .addTo(map.current);
 
     return () => {
       map.current?.remove();
+      map.current = null;
     };
   }, [data, lat, lon]);
 
@@ -315,15 +385,35 @@ const Results = () => {
           </section>
         )}
 
-        {/* Map */}
+        {/* Enhanced Climate Map */}
         <section>
-          <h2 className="text-2xl font-bold mb-4">Location</h2>
+          <h2 className="text-2xl font-bold mb-4">Climate Overview Map</h2>
           <Card>
             <CardContent className="p-0">
               <div
                 ref={mapContainer}
-                className="h-[300px] w-full rounded-lg overflow-hidden"
-              />
+                className="h-[400px] w-full rounded-lg overflow-hidden relative"
+              >
+                <div className="absolute top-4 right-4 z-10 bg-card/95 backdrop-blur-sm p-3 rounded-lg shadow-lg border">
+                  <div className="text-xs font-medium mb-2">Climate Indicators</div>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-red-500"></div>
+                      <span>Temperature: {tempData?.p50.toFixed(1)}°C</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-sky-500"></div>
+                      <span>Rain chance: {precipProb?.probability_percent || 0}%</span>
+                    </div>
+                    {data.summary.find(s => s.var === 'wind10m') && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-slate-500"></div>
+                        <span>Wind: {data.summary.find(s => s.var === 'wind10m')?.p50.toFixed(1)} m/s</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </section>
