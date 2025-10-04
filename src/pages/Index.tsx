@@ -4,13 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Search, Calendar, MapPin } from "lucide-react";
+import { Send, Loader2, Search, Calendar, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { AnimatedCharacter } from "@/components/AnimatedCharacter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { LocationPicker } from "@/components/LocationPicker";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { format } from "date-fns";
 
 interface Message {
@@ -39,11 +43,13 @@ const Index = () => {
   // Search state
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [windowDays, setWindowDays] = useState(15);
+  const [units, setUnits] = useState("metric");
 
   const performSearch = (location: { lat: number; lon: number }, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    const locationStr = `${location.lat},${location.lon}`;
-    navigate(`/results?location=${encodeURIComponent(locationStr)}&date=${dateStr}`);
+    navigate(`/results?lat=${location.lat}&lon=${location.lon}&date=${dateStr}&window=${windowDays}&units=${units}`);
   };
 
   const sendMessage = async () => {
@@ -269,6 +275,47 @@ const Index = () => {
                   />
                 </PopoverContent>
               </Popover>
+              
+              {/* Advanced Settings */}
+              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between">
+                    Advanced Settings
+                    {advancedOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="window">Forecast Window: {windowDays} days</Label>
+                    <Slider
+                      id="window"
+                      min={7}
+                      max={30}
+                      step={1}
+                      value={[windowDays]}
+                      onValueChange={(value) => setWindowDays(value[0])}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Number of days to analyze for climate outlook
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="units">Temperature Units</Label>
+                    <Select value={units} onValueChange={setUnits}>
+                      <SelectTrigger id="units">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="metric">Celsius (°C)</SelectItem>
+                        <SelectItem value="imperial">Fahrenheit (°F)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              
               <Button onClick={handleQuickSearch} className="w-full" disabled={!selectedLocation || !selectedDate}>
                 <Search className="h-4 w-4 mr-2" />
                 Get Climate Outlook
