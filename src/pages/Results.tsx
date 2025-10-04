@@ -42,6 +42,7 @@ const Results = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [locationName, setLocationName] = useState<string>("");
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
 
@@ -50,6 +51,26 @@ const Results = () => {
   const date = searchParams.get("date") || "";
   const window = Number(searchParams.get("window")) || 15;
   const units = searchParams.get("units") || "metric";
+
+  useEffect(() => {
+    const fetchLocationName = async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+        );
+        const data = await response.json();
+        const name = data.address?.city || data.address?.town || data.address?.village || data.address?.county || data.address?.state || "Unknown Location";
+        setLocationName(name);
+      } catch (err) {
+        console.error("Error fetching location name:", err);
+        setLocationName("Location");
+      }
+    };
+
+    if (lat && lon) {
+      fetchLocationName();
+    }
+  }, [lat, lon]);
 
   useEffect(() => {
     const fetchOutlook = async () => {
@@ -182,6 +203,13 @@ const Results = () => {
                      (forecastData.forecast.wind?.speed || 0) > 25 ? 'medium' : 'low') as 'low' | 'medium' | 'high',
               probability_percent: (forecastData.forecast.wind?.speed || 0) > 10 ? Math.min(85, Math.max(40, 50 + (forecastData.forecast.wind?.speed || 0))) : 20,
               rule_applied: `Wind speed: ${(forecastData.forecast.wind?.speed || 0).toFixed(1)} ${forecastData.forecast.wind?.unit || 'km/h'}. Gusts up to ${(forecastData.forecast.wind?.gusts || forecastData.forecast.wind?.speed || 0).toFixed(1)} ${forecastData.forecast.wind?.unit || 'km/h'}`,
+            },
+            {
+              risk_type: 'very_uncomfortable',
+              level: (forecastData.forecast.temperature.mean > 28 && forecastData.forecast.precipitation.amount > 5 ? 'high' :
+                     forecastData.forecast.temperature.mean > 25 || forecastData.forecast.precipitation.amount > 2 ? 'medium' : 'low') as 'low' | 'medium' | 'high',
+              probability_percent: Math.min(75, Math.max(30, (forecastData.forecast.temperature.mean > 25 ? 60 : 35) + (forecastData.forecast.precipitation.amount * 2))),
+              rule_applied: `Humidity and heat index assessment. Temperature: ${forecastData.forecast.temperature.mean.toFixed(1)}°C, Expected precipitation: ${forecastData.forecast.precipitation.amount.toFixed(1)}mm`,
             },
           ],
         };
@@ -395,18 +423,24 @@ const Results = () => {
               <div className="bg-white/70 backdrop-blur-sm px-5 py-3 rounded-xl border-2 border-white/50 shadow-md">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Location</div>
                 <div className="text-lg font-bold text-foreground">
+                  {locationName || "Loading..."}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
                   {data.metadata.latitude.toFixed(4)}°N, {data.metadata.longitude.toFixed(4)}°E
                 </div>
               </div>
               <div className="bg-white/70 backdrop-blur-sm px-5 py-3 rounded-xl border-2 border-white/50 shadow-md">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Target Date</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Target Days</div>
                 <div className="text-lg font-bold text-foreground">
-                  {new Date(data.metadata.date_requested).toLocaleDateString('en-US', { 
-                    weekday: 'short',
-                    month: 'long', 
-                    day: 'numeric', 
-                    year: 'numeric' 
-                  })}
+                  {(() => {
+                    const targetDate = new Date(data.metadata.date_requested);
+                    const startDate = new Date(targetDate);
+                    startDate.setDate(targetDate.getDate() - data.metadata.window_days);
+                    const endDate = new Date(targetDate);
+                    endDate.setDate(targetDate.getDate() + data.metadata.window_days);
+                    
+                    return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                  })()}
                 </div>
               </div>
               <div className="bg-white/70 backdrop-blur-sm px-5 py-3 rounded-xl border-2 border-white/50 shadow-md">
