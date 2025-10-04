@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertCircle, ArrowLeft, ChevronDown, ChevronUp, Cloud, Sun } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import maplibregl from "maplibre-gl";
 import { useRef } from "react";
@@ -360,33 +360,43 @@ const Results = () => {
   const otherRisks = data.risk_labels.filter(r => r !== highestRisk);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(200_100%_88%)] via-[hsl(190_95%_85%)] to-[hsl(45_100%_88%)] relative overflow-hidden">
+      {/* Decorative weather elements */}
+      <div className="absolute top-20 right-10 opacity-10">
+        <Cloud className="h-40 w-40 text-white" />
+      </div>
+      <div className="absolute bottom-40 left-20 opacity-10">
+        <Sun className="h-32 w-32 text-yellow-300" />
+      </div>
+      
       {/* Header */}
-      <div className="bg-[image:var(--gradient-hero)] text-white py-8 px-4">
+      <div className="bg-white/40 backdrop-blur-md border-b border-white/30 py-6 px-4 sticky top-0 z-50 shadow-lg">
         <div className="max-w-7xl mx-auto">
           <Button
             variant="ghost"
             onClick={() => navigate("/")}
-            className="mb-4 text-white hover:bg-white/10"
+            className="mb-3 hover:bg-white/50"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             New Search
           </Button>
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold mb-3">Climate Outlook</h1>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-3">
+                Climate Outlook
+              </h1>
+              <div className="flex flex-wrap gap-3 text-sm">
+                <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 shadow-sm">
                   <span>📍</span>
-                  <span>{data.metadata.latitude.toFixed(2)}°, {data.metadata.longitude.toFixed(2)}°</span>
+                  <span className="font-medium">{data.metadata.latitude.toFixed(2)}°, {data.metadata.longitude.toFixed(2)}°</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+                <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 shadow-sm">
                   <span>📅</span>
-                  <span>{new Date(data.metadata.date_requested).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <span className="font-medium">{new Date(data.metadata.date_requested).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+                <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 shadow-sm">
                   <span>📊</span>
-                  <span>±{data.metadata.window_days} days window</span>
+                  <span className="font-medium">±{data.metadata.window_days} days window</span>
                 </div>
               </div>
             </div>
@@ -395,92 +405,106 @@ const Results = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-12 space-y-12">
-        {/* Featured Risk */}
-        <section>
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 relative z-10">
+        {/* Featured Risk - Larger and more prominent */}
+        <section className="animate-fade-in">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <span className="text-3xl">⚠️</span>
+            Primary Weather Alert
+          </h2>
           <RiskCards data={[highestRisk]} featured />
         </section>
 
         {/* Weather Visuals */}
-        <section className="grid md:grid-cols-2 gap-8">
+        <section className="grid md:grid-cols-2 gap-6 animate-fade-in">
           {/* Temperature Visual */}
-          <Card className="overflow-hidden border-2 hover:shadow-xl transition-all">
-            <CardContent className="pt-6">
-              <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                <span className="text-4xl">🌡️</span>
-                <span>Temperature</span>
-              </h3>
-              <div className="flex items-center justify-center gap-12 py-8">
+          <Card className="overflow-hidden border-2 border-white/40 bg-white/50 backdrop-blur-md hover:shadow-2xl transition-all rounded-2xl">
+            <CardContent className="pt-8 pb-6 px-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-gradient-to-br from-red-500 to-orange-400 rounded-2xl shadow-lg">
+                  <span className="text-4xl">🌡️</span>
+                </div>
+                <h3 className="text-2xl font-bold">Temperature</h3>
+              </div>
+              <div className="flex items-center justify-around py-6">
                 <div className="text-center group">
-                  <div className="text-sm font-medium text-muted-foreground mb-3">Daily Low</div>
-                  <div className="text-5xl font-bold text-blue-500 transition-all group-hover:scale-110">
-                    {tMinData?.p50.toFixed(1)}°
+                  <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Daily Low</div>
+                  <div className="text-5xl font-bold text-blue-600 transition-all group-hover:scale-110 drop-shadow-lg">
+                    {tMinData?.p50.toFixed(0)}°
                   </div>
                 </div>
-                <div className="relative h-40 w-2">
+                <div className="relative h-32 w-3">
                   <div 
-                    className="absolute inset-0 bg-gradient-to-b from-red-500 via-yellow-400 to-blue-500 rounded-full shadow-lg"
-                    style={{ width: '8px', left: '-3px' }}
+                    className="absolute inset-0 bg-gradient-to-b from-red-500 via-yellow-400 to-blue-500 rounded-full shadow-xl"
+                    style={{ width: '12px', left: '-4.5px' }}
                   />
-                  <div className="absolute top-1/2 -translate-y-1/2 -left-8 w-16 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+                  <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-6 h-6 bg-white rounded-full border-4 border-primary shadow-lg animate-pulse" />
                 </div>
                 <div className="text-center group">
-                  <div className="text-sm font-medium text-muted-foreground mb-3">Daily High</div>
-                  <div className="text-5xl font-bold text-red-500 transition-all group-hover:scale-110">
-                    {tMaxData?.p50.toFixed(1)}°
+                  <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Daily High</div>
+                  <div className="text-5xl font-bold text-red-600 transition-all group-hover:scale-110 drop-shadow-lg">
+                    {tMaxData?.p50.toFixed(0)}°
                   </div>
                 </div>
               </div>
-              <div className="text-center pt-4 border-t">
-                <p className="text-sm text-muted-foreground">
-                  Average: <span className="font-bold text-foreground">{tempData?.p50.toFixed(1)}°C</span>
+              <div className="text-center pt-4 border-t border-white/40 bg-white/30 rounded-lg px-4 py-3 mt-4">
+                <p className="text-sm font-medium">
+                  Average Temperature: <span className="text-2xl font-bold text-foreground ml-2">{tempData?.p50.toFixed(1)}°C</span>
                 </p>
               </div>
             </CardContent>
           </Card>
 
           {/* Precipitation Visual */}
-          <Card className="overflow-hidden border-2 hover:shadow-xl transition-all">
-            <CardContent className="pt-6">
-              <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                <span className="text-4xl">💧</span>
-                <span>Rain Forecast</span>
-              </h3>
-              <div className="flex items-center justify-center py-8">
-                <div className="relative w-56 h-56">
+          <Card className="overflow-hidden border-2 border-white/40 bg-white/50 backdrop-blur-md hover:shadow-2xl transition-all rounded-2xl">
+            <CardContent className="pt-8 pb-6 px-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-sky-400 rounded-2xl shadow-lg">
+                  <span className="text-4xl">💧</span>
+                </div>
+                <h3 className="text-2xl font-bold">Precipitation</h3>
+              </div>
+              <div className="flex items-center justify-center py-6">
+                <div className="relative w-48 h-48">
                   <svg className="w-full h-full transform -rotate-90">
                     <circle
-                      cx="112"
-                      cy="112"
-                      r="90"
+                      cx="96"
+                      cy="96"
+                      r="80"
                       stroke="hsl(var(--muted))"
-                      strokeWidth="20"
+                      strokeWidth="16"
                       fill="none"
-                      opacity="0.3"
+                      opacity="0.2"
                     />
                     <circle
-                      cx="112"
-                      cy="112"
-                      r="90"
-                      stroke="hsl(var(--risk-wet))"
-                      strokeWidth="20"
+                      cx="96"
+                      cy="96"
+                      r="80"
+                      stroke="url(#rainGradient)"
+                      strokeWidth="16"
                       fill="none"
-                      strokeDasharray={`${(precipProb?.probability_percent || 0) * 5.65} 565`}
+                      strokeDasharray={`${(precipProb?.probability_percent || 0) * 5.03} 503`}
                       strokeLinecap="round"
-                      className="transition-all duration-1000"
+                      className="transition-all duration-1000 drop-shadow-lg"
                     />
+                    <defs>
+                      <linearGradient id="rainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="hsl(200, 90%, 50%)" />
+                        <stop offset="100%" stopColor="hsl(210, 85%, 60%)" />
+                      </linearGradient>
+                    </defs>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-6xl font-bold bg-gradient-to-r from-blue-500 to-blue-300 bg-clip-text text-transparent">
-                      {(precipProb?.probability_percent || 0).toFixed(1)}%
+                    <div className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent drop-shadow-lg">
+                      {(precipProb?.probability_percent || 0).toFixed(0)}%
                     </div>
-                    <div className="text-sm text-muted-foreground mt-2 font-medium">Rain Chance</div>
+                    <div className="text-xs text-muted-foreground mt-2 font-semibold uppercase tracking-wider">Rain Chance</div>
                   </div>
                 </div>
               </div>
-              <div className="text-center pt-4 border-t">
-                <p className="text-sm text-muted-foreground">
-                  Expected rainfall: <span className="font-bold text-foreground">{precipData?.p50.toFixed(1)} mm/day</span>
+              <div className="text-center pt-4 border-t border-white/40 bg-white/30 rounded-lg px-4 py-3 mt-4">
+                <p className="text-sm font-medium">
+                  Expected: <span className="text-2xl font-bold text-foreground ml-2">{precipData?.p50.toFixed(1)} mm</span>
                 </p>
               </div>
             </CardContent>
@@ -489,36 +513,42 @@ const Results = () => {
 
         {/* Other Risks */}
         {otherRisks.length > 0 && (
-          <section>
-            <h2 className="text-2xl font-bold mb-6">Additional Risk Factors</h2>
+          <section className="animate-fade-in">
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <span className="text-2xl">📋</span>
+              Additional Risk Factors
+            </h2>
             <RiskCards data={otherRisks} />
           </section>
         )}
 
         {/* Enhanced Climate Map */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Climate Overview Map</h2>
-          <Card>
+        <section className="animate-fade-in">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <span className="text-2xl">🗺️</span>
+            Location Overview
+          </h2>
+          <Card className="border-2 border-white/40 bg-white/50 backdrop-blur-md rounded-2xl overflow-hidden">
             <CardContent className="p-0">
               <div
                 ref={mapContainer}
-                className="h-[400px] w-full rounded-lg overflow-hidden relative"
+                className="h-[400px] w-full relative"
               >
-                <div className="absolute top-4 right-4 z-10 bg-card/95 backdrop-blur-sm p-3 rounded-lg shadow-lg border">
-                  <div className="text-xs font-medium mb-2">Climate Indicators</div>
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-red-500"></div>
-                      <span>Temperature: {tempData?.p50.toFixed(1)}°C</span>
+                <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-xl border-2 border-white/50">
+                  <div className="text-xs font-bold mb-3 uppercase tracking-wider text-primary">Climate Data</div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-red-500 shadow-sm"></div>
+                      <span className="font-medium">Temp: {tempData?.p50.toFixed(1)}°C</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-sky-500"></div>
-                      <span>Rain chance: {(precipProb?.probability_percent || 0).toFixed(1)}%</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-sky-500 shadow-sm"></div>
+                      <span className="font-medium">Rain: {(precipProb?.probability_percent || 0).toFixed(0)}%</span>
                     </div>
                     {data.summary.find(s => s.var === 'wind10m') && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-slate-500"></div>
-                        <span>Wind: {data.summary.find(s => s.var === 'wind10m')?.p50.toFixed(1)} m/s</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 rounded-full bg-slate-500 shadow-sm"></div>
+                        <span className="font-medium">Wind: {data.summary.find(s => s.var === 'wind10m')?.p50.toFixed(1)} m/s</span>
                       </div>
                     )}
                   </div>
@@ -529,10 +559,10 @@ const Results = () => {
         </section>
 
         {/* Details */}
-        <section>
+        <section className="animate-fade-in">
           <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
             <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full gap-2 mb-4">
+              <Button variant="outline" className="w-full gap-2 mb-4 bg-white/50 backdrop-blur-sm border-white/40 hover:bg-white/70 rounded-xl">
                 {detailsOpen ? (
                   <>
                     <ChevronUp className="h-4 w-4" />
@@ -547,18 +577,25 @@ const Results = () => {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <DetailsTable
-                summary={data.summary}
-                windowDays={data.metadata.window_days}
-              />
+              <Card className="border-2 border-white/40 bg-white/50 backdrop-blur-md rounded-2xl">
+                <CardContent className="pt-6">
+                  <DetailsTable
+                    summary={data.summary}
+                    windowDays={data.metadata.window_days}
+                  />
+                </CardContent>
+              </Card>
             </CollapsibleContent>
           </Collapsible>
         </section>
 
         {/* Downloads */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6">Export Data</h2>
-          <Card>
+        <section className="animate-fade-in">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <span className="text-2xl">💾</span>
+            Export Data
+          </h2>
+          <Card className="border-2 border-white/40 bg-white/50 backdrop-blur-md rounded-2xl">
             <CardContent className="pt-6">
               <DownloadButtons
                 jsonPayload={data}
@@ -571,9 +608,10 @@ const Results = () => {
         </section>
 
         {/* Disclaimer Footer */}
-        <div className="text-center py-6 px-4 bg-muted/30 rounded-lg">
-          <p className="text-xs text-muted-foreground max-w-xl mx-auto">
-            Long-range climate outlook based on historical patterns — not a short-term weather forecast
+        <div className="text-center py-6 px-6 bg-white/40 backdrop-blur-sm rounded-2xl border border-white/40">
+          <p className="text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            📊 Long-range climate outlook based on historical patterns — not a short-term weather forecast. 
+            Data represents statistical probabilities and should be used as guidance only.
           </p>
         </div>
       </div>
