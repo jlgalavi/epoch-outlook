@@ -425,9 +425,6 @@ const Results = () => {
                 <div className="text-lg font-bold text-foreground">
                   {locationName || "Loading..."}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {data.metadata.latitude.toFixed(4)}°N, {data.metadata.longitude.toFixed(4)}°E
-                </div>
               </div>
               <div className="bg-white/70 backdrop-blur-sm px-5 py-3 rounded-xl border-2 border-white/50 shadow-md">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Target Days</div>
