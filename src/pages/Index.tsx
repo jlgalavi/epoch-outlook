@@ -179,7 +179,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[hsl(280_90%_95%)] via-[hsl(195_100%_90%)] to-[hsl(330_85%_92%)] flex flex-col">
       {/* Header */}
-      <header className="w-full py-4 px-6 border-b border-primary/20 bg-white/60 backdrop-blur-md">
+      <header className="w-full py-4 px-6 border-b border-white/20 bg-white/30 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
@@ -207,10 +207,10 @@ const Index = () => {
           </div>
 
           {/* Collapsible Chat Bar */}
-          <Card className="w-full shadow-2xl animate-fade-in border-primary/30 bg-white/90 backdrop-blur-sm">
+          <Card className="w-full shadow-xl animate-fade-in border-white/40 bg-white/40 backdrop-blur-md">
             {!isChatExpanded ? (
               /* Collapsed Write Bar */
-              <div className="p-4">
+              <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg">
                 <div className="flex gap-2">
                   <Input
                     value={input}
@@ -258,7 +258,7 @@ const Index = () => {
                 </ScrollArea>
 
                 {/* Input */}
-                <div className="p-4 border-t">
+                <div className="p-4 border-t border-white/30 bg-white/20 backdrop-blur-sm">
                   <div className="flex gap-2">
                     <Input
                       value={input}
@@ -284,7 +284,7 @@ const Index = () => {
           </Card>
 
           {/* Manual Search Card */}
-          <Card ref={manualSearchRef} className="w-full p-6 shadow-lg animate-fade-in border-secondary/30 bg-white/90 backdrop-blur-sm">
+          <Card ref={manualSearchRef} className="w-full p-6 shadow-xl animate-fade-in border-white/40 bg-white/40 backdrop-blur-md">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Search className="h-5 w-5" />
               Manual Search
