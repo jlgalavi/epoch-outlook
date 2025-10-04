@@ -32,30 +32,45 @@ const riskConfig = {
     icon: Flame,
     colorClass: "bg-gradient-to-br from-risk-hot/10 to-risk-hot/5 border-risk-hot/20",
     iconColor: "text-risk-hot",
+    animation: "animate-pulse",
+    emoji: "🔥",
+    description: "High temperatures expected",
   },
   very_cold: {
     label: "Very Cold",
     icon: Snowflake,
     colorClass: "bg-gradient-to-br from-risk-cold/10 to-risk-cold/5 border-risk-cold/20",
     iconColor: "text-risk-cold",
+    animation: "animate-[spin_3s_linear_infinite]",
+    emoji: "❄️",
+    description: "Low temperatures expected",
   },
   very_windy: {
     label: "Very Windy",
     icon: Wind,
     colorClass: "bg-gradient-to-br from-risk-wind/10 to-risk-wind/5 border-risk-wind/20",
     iconColor: "text-risk-wind",
+    animation: "animate-[bounce_1s_ease-in-out_infinite]",
+    emoji: "💨",
+    description: "Strong winds expected",
   },
   very_wet: {
     label: "Very Wet",
     icon: CloudRain,
     colorClass: "bg-gradient-to-br from-risk-wet/10 to-risk-wet/5 border-risk-wet/20",
     iconColor: "text-risk-wet",
+    animation: "animate-[bounce_2s_ease-in-out_infinite]",
+    emoji: "💧",
+    description: "Heavy rain expected",
   },
   very_uncomfortable: {
     label: "Very Uncomfortable",
     icon: ThermometerSun,
     colorClass: "bg-gradient-to-br from-risk-uncomfortable/10 to-risk-uncomfortable/5 border-risk-uncomfortable/20",
     iconColor: "text-risk-uncomfortable",
+    animation: "animate-pulse",
+    emoji: "😓",
+    description: "Uncomfortable conditions",
   },
 };
 
@@ -73,26 +88,29 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
     const Icon = config.icon;
 
     return (
-      <Card className={cn("overflow-hidden border-2", config.colorClass)}>
+      <Card className={cn("overflow-hidden border-2 transition-all hover:shadow-2xl", config.colorClass)}>
         <CardContent className="p-8">
           <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className={cn("p-8 rounded-full bg-card/50", config.iconColor)}>
-              <Icon className="h-16 w-16" />
+            <div className={cn("relative p-8 rounded-full bg-card/50", config.iconColor)}>
+              <Icon className={cn("h-20 w-20", config.animation)} />
+              <div className="absolute -top-2 -right-2 text-4xl">{config.emoji}</div>
             </div>
             <div className="flex-1 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
                 <h2 className="text-3xl font-bold">{config.label}</h2>
-                <Badge className={cn(levelInfo.color, "text-base px-4 py-1")}>
-                  {levelInfo.label}
+                <Badge className={cn(levelInfo.color, "text-base px-4 py-1 animate-pulse")}>
+                  {levelInfo.label} Risk
                 </Badge>
               </div>
-              <p className="text-5xl font-bold my-4">{risk.probability_percent}%</p>
-              <p className="text-lg text-muted-foreground">
-                Probability of occurrence
+              <p className="text-6xl font-bold my-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                {risk.probability_percent}%
+              </p>
+              <p className="text-lg text-muted-foreground mb-4">
+                {config.description}
               </p>
               <div className="mt-4 pt-4 border-t border-border/50">
                 <p className="text-sm text-muted-foreground">
-                  Based on: {risk.rule_applied}
+                  {risk.rule_applied}
                 </p>
               </div>
             </div>
@@ -103,7 +121,7 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {data.map((risk) => {
         const config = riskConfig[risk.risk_type];
         const Icon = config.icon;
@@ -113,31 +131,33 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
           <Card
             key={risk.risk_type}
             className={cn(
-              "transition-all hover:shadow-lg border",
+              "group transition-all hover:scale-105 hover:shadow-xl border-2 overflow-hidden",
               config.colorClass
             )}
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className={cn("p-2 rounded-lg bg-card/50", config.iconColor)}>
-                  <Icon className="h-5 w-5" />
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className={cn("relative p-3 rounded-xl bg-card/50", config.iconColor)}>
+                  <Icon className={cn("h-8 w-8", config.animation)} />
+                  <div className="absolute -top-1 -right-1 text-xl">{config.emoji}</div>
                 </div>
-                <Badge className={levelInfo.color}>{levelInfo.label}</Badge>
+                <Badge className={cn(levelInfo.color, "px-3 py-1")}>
+                  {levelInfo.label}
+                </Badge>
               </div>
-              <CardTitle className="text-base">{config.label}</CardTitle>
+              <CardTitle className="text-xl">{config.label}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-3xl font-bold text-foreground">
+              <div className="space-y-3">
+                <div className="flex items-baseline gap-2">
+                  <p className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                     {risk.probability_percent}%
                   </p>
+                  <p className="text-sm text-muted-foreground">chance</p>
                 </div>
-                <div className="pt-2 border-t border-border/50">
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {risk.rule_applied}
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  {config.description}
+                </p>
               </div>
             </CardContent>
           </Card>

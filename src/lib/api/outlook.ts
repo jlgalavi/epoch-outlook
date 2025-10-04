@@ -9,6 +9,91 @@ export interface OutlookParams {
   units?: "metric" | "imperial";
 }
 
+// Generate diverse extreme scenarios for testing
+function generateScenario(lat: number, lon: number, doy: number, units: "metric" | "imperial") {
+  const hash = Math.abs(Math.sin(lat * lon * doy));
+  
+  // Extreme Hot Desert (40% chance)
+  if (hash < 0.4) {
+    return units === "metric" ? {
+      temps: { mean: 42, tMax: 48, tMin: 35, std: 3.5 },
+      precip: { mean: 0.1, p50: 0, p90: 0.5, rainChance: 5 },
+      wind: { mean: 2.5, p90: 4.2 },
+      risks: [
+        { type: "very_hot", level: "high", prob: 85, rule: "Heat Index ≥ 40°C" },
+        { type: "very_uncomfortable", level: "high", prob: 78, rule: "Extreme heat conditions" },
+      ]
+    } : {
+      temps: { mean: 108, tMax: 118, tMin: 95, std: 6.3 },
+      precip: { mean: 0.004, p50: 0, p90: 0.02, rainChance: 5 },
+      wind: { mean: 5.6, p90: 9.4 },
+      risks: [
+        { type: "very_hot", level: "high", prob: 85, rule: "Heat Index ≥ 104°F" },
+        { type: "very_uncomfortable", level: "high", prob: 78, rule: "Extreme heat conditions" },
+      ]
+    };
+  }
+  
+  // Extreme Cold Winter (20% chance)
+  if (hash < 0.6) {
+    return units === "metric" ? {
+      temps: { mean: -15, tMax: -8, tMin: -22, std: 4.2 },
+      precip: { mean: 1.5, p50: 0.8, p90: 4.5, rainChance: 45 },
+      wind: { mean: 8.5, p90: 14.2 },
+      risks: [
+        { type: "very_cold", level: "high", prob: 92, rule: "Wind Chill ≤ -20°C" },
+        { type: "very_windy", level: "high", prob: 68, rule: "Wind speed ≥ 12 m/s" },
+      ]
+    } : {
+      temps: { mean: 5, tMax: 18, tMin: -8, std: 7.6 },
+      precip: { mean: 0.06, p50: 0.03, p90: 0.18, rainChance: 45 },
+      wind: { mean: 19, p90: 32 },
+      risks: [
+        { type: "very_cold", level: "high", prob: 92, rule: "Wind Chill ≤ -4°F" },
+        { type: "very_windy", level: "high", prob: 68, rule: "Wind speed ≥ 27 mph" },
+      ]
+    };
+  }
+  
+  // Monsoon/Hurricane Season (20% chance)
+  if (hash < 0.8) {
+    return units === "metric" ? {
+      temps: { mean: 28, tMax: 32, tMin: 24, std: 2.1 },
+      precip: { mean: 45, p50: 38, p90: 95, rainChance: 88 },
+      wind: { mean: 12, p90: 22 },
+      risks: [
+        { type: "very_wet", level: "high", prob: 88, rule: "Heavy rainfall ≥ 30mm/day" },
+        { type: "very_windy", level: "high", prob: 75, rule: "Storm conditions ≥ 15 m/s" },
+      ]
+    } : {
+      temps: { mean: 82, tMax: 90, tMin: 75, std: 3.8 },
+      precip: { mean: 1.77, p50: 1.5, p90: 3.74, rainChance: 88 },
+      wind: { mean: 27, p90: 49 },
+      risks: [
+        { type: "very_wet", level: "high", prob: 88, rule: "Heavy rainfall ≥ 1.2in/day" },
+        { type: "very_windy", level: "high", prob: 75, rule: "Storm conditions ≥ 34 mph" },
+      ]
+    };
+  }
+  
+  // Moderate/Pleasant (20% chance)
+  return units === "metric" ? {
+    temps: { mean: 22, tMax: 27, tMin: 17, std: 2.5 },
+    precip: { mean: 2.5, p50: 1.2, p90: 8, rainChance: 35 },
+    wind: { mean: 4.2, p90: 7.5 },
+    risks: [
+      { type: "very_wet", level: "low", prob: 15, rule: "Light rain possible" },
+    ]
+  } : {
+    temps: { mean: 72, tMax: 81, tMin: 63, std: 4.5 },
+    precip: { mean: 0.1, p50: 0.05, p90: 0.31, rainChance: 35 },
+    wind: { mean: 9.4, p90: 16.8 },
+    risks: [
+      { type: "very_wet", level: "low", prob: 15, rule: "Light rain possible" },
+    ]
+  };
+}
+
 export async function getOutlook(params: OutlookParams) {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -20,6 +105,9 @@ export async function getOutlook(params: OutlookParams) {
   const start = new Date(dateObj.getFullYear(), 0, 0);
   const diff = dateObj.getTime() - start.getTime();
   const doy = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  // Create diverse scenarios based on location/date
+  const scenario = generateScenario(lat, lon, doy, units);
 
   // Mock response matching the spec
   return {
@@ -51,35 +139,35 @@ export async function getOutlook(params: OutlookParams) {
       {
         var: "t_mean",
         unit: units === "metric" ? "°C" : "°F",
-        mean: units === "metric" ? 25.4 : 77.7,
-        std: units === "metric" ? 2.1 : 3.8,
-        p10: units === "metric" ? 22.0 : 71.6,
-        p25: units === "metric" ? 24.0 : 75.2,
-        p50: units === "metric" ? 25.3 : 77.5,
-        p75: units === "metric" ? 26.7 : 80.1,
-        p90: units === "metric" ? 28.9 : 84.0,
+        mean: scenario.temps.mean,
+        std: scenario.temps.std,
+        p10: scenario.temps.mean - scenario.temps.std * 1.5,
+        p25: scenario.temps.mean - scenario.temps.std * 0.7,
+        p50: scenario.temps.mean,
+        p75: scenario.temps.mean + scenario.temps.std * 0.7,
+        p90: scenario.temps.mean + scenario.temps.std * 1.5,
       },
       {
         var: "t_max",
         unit: units === "metric" ? "°C" : "°F",
-        mean: units === "metric" ? 31.2 : 88.2,
-        std: units === "metric" ? 2.6 : 4.7,
-        p10: units === "metric" ? 27.9 : 82.2,
-        p25: units === "metric" ? 29.8 : 85.6,
-        p50: units === "metric" ? 31.0 : 87.8,
-        p75: units === "metric" ? 32.6 : 90.7,
-        p90: units === "metric" ? 34.7 : 94.5,
+        mean: scenario.temps.tMax,
+        std: scenario.temps.std,
+        p10: scenario.temps.tMax - scenario.temps.std * 1.5,
+        p25: scenario.temps.tMax - scenario.temps.std * 0.7,
+        p50: scenario.temps.tMax,
+        p75: scenario.temps.tMax + scenario.temps.std * 0.7,
+        p90: scenario.temps.tMax + scenario.temps.std * 1.5,
       },
       {
         var: "t_min",
         unit: units === "metric" ? "°C" : "°F",
-        mean: units === "metric" ? 19.1 : 66.4,
-        std: units === "metric" ? 1.8 : 3.2,
-        p10: units === "metric" ? 16.6 : 61.9,
-        p25: units === "metric" ? 18.0 : 64.4,
-        p50: units === "metric" ? 19.0 : 66.2,
-        p75: units === "metric" ? 20.2 : 68.4,
-        p90: units === "metric" ? 21.8 : 71.2,
+        mean: scenario.temps.tMin,
+        std: scenario.temps.std,
+        p10: scenario.temps.tMin - scenario.temps.std * 1.5,
+        p25: scenario.temps.tMin - scenario.temps.std * 0.7,
+        p50: scenario.temps.tMin,
+        p75: scenario.temps.tMin + scenario.temps.std * 0.7,
+        p90: scenario.temps.tMin + scenario.temps.std * 1.5,
       },
       {
         var: "rh_mean",
@@ -106,86 +194,58 @@ export async function getOutlook(params: OutlookParams) {
       {
         var: "wind10m",
         unit: units === "metric" ? "m/s" : "mph",
-        mean: units === "metric" ? 3.6 : 8.1,
-        std: units === "metric" ? 1.2 : 2.7,
-        p10: units === "metric" ? 2.1 : 4.7,
-        p25: units === "metric" ? 2.9 : 6.5,
-        p50: units === "metric" ? 3.4 : 7.6,
-        p75: units === "metric" ? 4.2 : 9.4,
-        p90: units === "metric" ? 5.4 : 12.1,
+        mean: scenario.wind.mean,
+        std: scenario.wind.mean * 0.3,
+        p10: scenario.wind.mean * 0.6,
+        p25: scenario.wind.mean * 0.8,
+        p50: scenario.wind.mean,
+        p75: scenario.wind.mean * 1.2,
+        p90: scenario.wind.p90,
       },
       {
         var: "precip_mm",
         unit: units === "metric" ? "mm/d" : "in/d",
-        mean: units === "metric" ? 1.8 : 0.07,
-        std: units === "metric" ? 4.6 : 0.18,
+        mean: scenario.precip.mean,
+        std: scenario.precip.mean * 2.5,
         p10: 0.0,
-        p25: 0.0,
-        p50: units === "metric" ? 0.2 : 0.01,
-        p75: units === "metric" ? 1.3 : 0.05,
-        p90: units === "metric" ? 5.9 : 0.23,
+        p25: scenario.precip.mean * 0.1,
+        p50: scenario.precip.p50,
+        p75: scenario.precip.mean * 0.7,
+        p90: scenario.precip.p90,
       },
     ],
     probabilities: [
       {
         metric: "t_max",
-        threshold: units === "metric" ? 32 : 90,
+        threshold: scenario.temps.tMax - 5,
         comparator: ">=",
-        probability_percent: 22,
+        probability_percent: scenario.risks[0]?.prob || 20,
       },
       {
         metric: "precip_mm",
         threshold: units === "metric" ? 1 : 0.04,
         comparator: ">=",
-        probability_percent: 28,
+        probability_percent: scenario.precip.rainChance,
       },
       {
         metric: "precip_mm",
-        threshold: units === "metric" ? 10 : 0.4,
+        threshold: scenario.precip.p90 * 0.8,
         comparator: ">=",
-        probability_percent: 6,
+        probability_percent: Math.min(scenario.precip.rainChance * 0.3, 10),
       },
       {
         metric: "wind10m",
-        threshold: units === "metric" ? 8 : 18,
+        threshold: scenario.wind.p90 * 0.7,
         comparator: ">=",
-        probability_percent: 4,
+        probability_percent: scenario.risks.find(r => r.type === "very_windy")?.prob || 10,
       },
     ],
-    risk_labels: [
-      {
-        risk_type: "very_hot" as const,
-        level: "medium" as const,
-        probability_percent: 22,
-        rule_applied: `Heat Index ≥ ${units === "metric" ? "33°C" : "91°F"}`,
-      },
-      {
-        risk_type: "very_windy" as const,
-        level: "low" as const,
-        probability_percent: 10,
-        rule_applied: "Wind speed ≥ 75th percentile",
-      },
-      {
-        risk_type: "very_wet" as const,
-        level: "low" as const,
-        probability_percent: 6,
-        rule_applied: `Precipitation ≥ ${units === "metric" ? "10mm/day" : "0.4in/day"}`,
-      },
-      {
-        risk_type: "very_uncomfortable" as const,
-        level: "medium" as const,
-        probability_percent: 18,
-        rule_applied: `Heat Index ≥ ${units === "metric" ? "33°C" : "91°F"} or Dew Point ≥ ${
-          units === "metric" ? "20°C" : "68°F"
-        }`,
-      },
-      {
-        risk_type: "very_cold" as const,
-        level: "low" as const,
-        probability_percent: 2,
-        rule_applied: `Wind Chill ≤ ${units === "metric" ? "0°C" : "32°F"}`,
-      },
-    ],
+    risk_labels: scenario.risks.map(r => ({
+      risk_type: r.type as any,
+      level: r.level as any,
+      probability_percent: r.prob,
+      rule_applied: r.rule,
+    })),
     raw_sample_snapshot: [
       {
         date_iso: "2004-08-10",

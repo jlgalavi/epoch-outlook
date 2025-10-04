@@ -221,76 +221,85 @@ const Results = () => {
         {/* Weather Visuals */}
         <section className="grid md:grid-cols-2 gap-8">
           {/* Temperature Visual */}
-          <Card>
+          <Card className="overflow-hidden border-2 hover:shadow-xl transition-all">
             <CardContent className="pt-6">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span className="text-2xl">🌡️</span>
-                Temperature Range
+              <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                <span className="text-4xl">🌡️</span>
+                <span>Temperature</span>
               </h3>
-              <div className="flex items-center justify-center gap-8 py-8">
-                <div className="text-center">
-                  <div className="text-sm text-muted-foreground mb-2">Low</div>
-                  <div className="text-4xl font-bold text-blue-500">
-                    {tMinData?.p50.toFixed(1)}°
+              <div className="flex items-center justify-center gap-12 py-8">
+                <div className="text-center group">
+                  <div className="text-sm font-medium text-muted-foreground mb-3">Daily Low</div>
+                  <div className="text-5xl font-bold text-blue-500 transition-all group-hover:scale-110">
+                    {tMinData?.p50.toFixed(0)}°
                   </div>
                 </div>
-                <div className="relative h-32 w-px">
+                <div className="relative h-40 w-2">
                   <div 
-                    className="absolute inset-0 bg-gradient-to-b from-blue-500 via-yellow-500 to-red-500 rounded-full"
-                    style={{ width: '4px', left: '-1.5px' }}
+                    className="absolute inset-0 bg-gradient-to-b from-red-500 via-yellow-400 to-blue-500 rounded-full shadow-lg"
+                    style={{ width: '8px', left: '-3px' }}
                   />
+                  <div className="absolute top-1/2 -translate-y-1/2 -left-8 w-16 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
                 </div>
-                <div className="text-center">
-                  <div className="text-sm text-muted-foreground mb-2">High</div>
-                  <div className="text-4xl font-bold text-red-500">
-                    {tMaxData?.p50.toFixed(1)}°
+                <div className="text-center group">
+                  <div className="text-sm font-medium text-muted-foreground mb-3">Daily High</div>
+                  <div className="text-5xl font-bold text-red-500 transition-all group-hover:scale-110">
+                    {tMaxData?.p50.toFixed(0)}°
                   </div>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground text-center">
-                Average: {tempData?.p50.toFixed(1)}°C
-              </p>
+              <div className="text-center pt-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Average: <span className="font-bold text-foreground">{tempData?.p50.toFixed(1)}°C</span>
+                </p>
+              </div>
             </CardContent>
           </Card>
 
           {/* Precipitation Visual */}
-          <Card>
+          <Card className="overflow-hidden border-2 hover:shadow-xl transition-all">
             <CardContent className="pt-6">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span className="text-2xl">💧</span>
-                Chance of Rain
+              <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                <span className="text-4xl">💧</span>
+                <span>Rain Forecast</span>
               </h3>
               <div className="flex items-center justify-center py-8">
-                <div className="relative w-48 h-48">
+                <div className="relative w-56 h-56">
                   <svg className="w-full h-full transform -rotate-90">
                     <circle
-                      cx="96"
-                      cy="96"
-                      r="80"
+                      cx="112"
+                      cy="112"
+                      r="90"
                       stroke="hsl(var(--muted))"
-                      strokeWidth="16"
+                      strokeWidth="20"
                       fill="none"
+                      opacity="0.3"
                     />
                     <circle
-                      cx="96"
-                      cy="96"
-                      r="80"
+                      cx="112"
+                      cy="112"
+                      r="90"
                       stroke="hsl(var(--risk-wet))"
-                      strokeWidth="16"
+                      strokeWidth="20"
                       fill="none"
-                      strokeDasharray={`${(precipProb?.probability_percent || 0) * 5.03} 502.4`}
+                      strokeDasharray={`${(precipProb?.probability_percent || 0) * 5.65} 565`}
                       strokeLinecap="round"
+                      className="transition-all duration-1000"
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-5xl font-bold">{precipProb?.probability_percent || 0}%</div>
-                    <div className="text-sm text-muted-foreground mt-1">Rain Chance</div>
+                    <div className="text-6xl font-bold bg-gradient-to-r from-blue-500 to-blue-300 bg-clip-text text-transparent">
+                      {precipProb?.probability_percent || 0}%
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-2 font-medium">Rain Chance</div>
                   </div>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground text-center">
-                Expected: {precipData?.p50.toFixed(1)} mm/day
-              </p>
+              <div className="text-center pt-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Expected rainfall: <span className="font-bold text-foreground">{precipData?.p50.toFixed(1)} mm/day</span>
+                </p>
+              </div>
             </CardContent>
           </Card>
         </section>
@@ -359,10 +368,9 @@ const Results = () => {
         </section>
 
         {/* Disclaimer Footer */}
-        <div className="text-center py-8 border-t">
-          <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-            This is a long-range outlook based on historical climate patterns. This is not a short-term forecast.
-            Results are derived from statistical analysis of past weather data and should be used for planning purposes only.
+        <div className="text-center py-6 px-4 bg-muted/30 rounded-lg">
+          <p className="text-xs text-muted-foreground max-w-xl mx-auto">
+            Long-range climate outlook based on historical patterns — not a short-term weather forecast
           </p>
         </div>
       </div>
