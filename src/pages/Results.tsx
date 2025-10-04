@@ -99,6 +99,11 @@ const Results = () => {
       style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
       center: [lon, lat],
       zoom: 6,
+      interactive: false,
+      scrollZoom: false,
+      boxZoom: false,
+      doubleClickZoom: false,
+      touchZoomRotate: false,
     });
 
     map.current.on('load', () => {
