@@ -50,14 +50,13 @@ serve(async (req) => {
     const tempUnit = units === 'metric' ? 'celsius' : 'fahrenheit';
     const precipUnit = units === 'metric' ? 'mm' : 'inch';
     
-    // Use ensemble models for longer range forecasts
-    const apiUrl = new URL('https://ensemble-api.open-meteo.com/v1/ensemble');
+    // Use the standard forecast API (not ensemble) for better compatibility
+    const apiUrl = new URL('https://api.open-meteo.com/v1/forecast');
     apiUrl.searchParams.set('latitude', lat.toString());
     apiUrl.searchParams.set('longitude', lon.toString());
     apiUrl.searchParams.set('daily', [
       'temperature_2m_max',
       'temperature_2m_min',
-      'temperature_2m_mean',
       'precipitation_sum',
       'precipitation_probability_max',
       'windspeed_10m_max',
@@ -65,7 +64,7 @@ serve(async (req) => {
     ].join(','));
     apiUrl.searchParams.set('temperature_unit', tempUnit);
     apiUrl.searchParams.set('precipitation_unit', precipUnit);
-    apiUrl.searchParams.set('forecast_days', '16'); // Maximum available
+    apiUrl.searchParams.set('forecast_days', '16');
     apiUrl.searchParams.set('timezone', 'auto');
     
     console.log(`Calling Open-Meteo API: ${apiUrl.toString()}`);
@@ -74,6 +73,8 @@ serve(async (req) => {
     const apiResponse = await fetch(apiUrl.toString());
     
     if (!apiResponse.ok) {
+      const errorText = await apiResponse.text();
+      console.error(`Open-Meteo API error response: ${errorText}`);
       throw new Error(`Open-Meteo API error: ${apiResponse.statusText}`);
     }
     
@@ -89,11 +90,13 @@ serve(async (req) => {
     
     if (dateIndex >= 0 && dateIndex < weatherData.daily.time.length) {
       // We have exact data for this date
+      const tempMean = (weatherData.daily.temperature_2m_max[dateIndex] + weatherData.daily.temperature_2m_min[dateIndex]) / 2;
+      
       forecastData = {
         date: weatherData.daily.time[dateIndex],
         tempMax: weatherData.daily.temperature_2m_max[dateIndex],
         tempMin: weatherData.daily.temperature_2m_min[dateIndex],
-        tempMean: weatherData.daily.temperature_2m_mean[dateIndex],
+        tempMean: tempMean,
         precipSum: weatherData.daily.precipitation_sum[dateIndex],
         precipProb: weatherData.daily.precipitation_probability_max[dateIndex],
         windSpeed: weatherData.daily.windspeed_10m_max[dateIndex],
@@ -106,8 +109,13 @@ serve(async (req) => {
       confidence = { temp: 0.65, precip: 0.55 };
       
       const lastIndex = weatherData.daily.time.length - 1;
-      const recentTemps = weatherData.daily.temperature_2m_mean.slice(-7);
-      const avgTemp = recentTemps.reduce((a: number, b: number) => a + b, 0) / recentTemps.length;
+      
+      // Calculate mean temperatures for recent days
+      const recentMaxTemps = weatherData.daily.temperature_2m_max.slice(-7);
+      const recentMinTemps = weatherData.daily.temperature_2m_min.slice(-7);
+      const avgMaxTemp = recentMaxTemps.reduce((a: number, b: number) => a + b, 0) / recentMaxTemps.length;
+      const avgMinTemp = recentMinTemps.reduce((a: number, b: number) => a + b, 0) / recentMinTemps.length;
+      const avgTemp = (avgMaxTemp + avgMinTemp) / 2;
       const tempVariance = 5;
       
       const recentPrecip = weatherData.daily.precipitation_probability_max.slice(-7);
