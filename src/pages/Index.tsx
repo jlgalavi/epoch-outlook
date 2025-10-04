@@ -71,6 +71,53 @@ const Index = () => {
       };
       
       setMessages((prev) => [...prev, assistantMessage]);
+      
+      // Handle extracted search parameters
+      if (data.searchParams) {
+        const { location, date } = data.searchParams;
+        
+        // If we have a location, geocode it
+        if (location) {
+          try {
+            const geoResponse = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`
+            );
+            const geoData = await geoResponse.json();
+            
+            if (geoData && geoData[0]) {
+              setSelectedLocation({
+                lat: parseFloat(geoData[0].lat),
+                lon: parseFloat(geoData[0].lon)
+              });
+            }
+          } catch (err) {
+            console.error("Error geocoding location:", err);
+          }
+        }
+        
+        // If we have a date, set it
+        if (date) {
+          setSelectedDate(new Date(date));
+        }
+        
+        // If we have both, navigate to results
+        if (location && date) {
+          setTimeout(() => {
+            const geoResponse = fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`
+            ).then(res => res.json()).then(geoData => {
+              if (geoData && geoData[0]) {
+                const coords = {
+                  lat: parseFloat(geoData[0].lat),
+                  lon: parseFloat(geoData[0].lon)
+                };
+                performSearch(coords, new Date(date));
+              }
+            });
+          }, 1000);
+        }
+      }
+      
       setCharacterMood("happy");
     } catch (error) {
       console.error("Error sending message:", error);

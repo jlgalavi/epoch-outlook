@@ -18,21 +18,16 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a friendly and helpful climate assistant named "Clima". 
-Your role is to help users understand climate outlook data in a simple, entertaining way.
+    const systemPrompt = `You are Clima 🌤️, a friendly climate research assistant. 
+Your role is to help users find climate outlook data for specific locations and dates.
 
-You have access to the following climate data for the user's selected location:
-${climateData ? JSON.stringify(climateData, null, 2) : "No data available yet"}
-
-Guidelines:
-- Be warm, friendly, and conversational
+When users ask about climate data:
+- Extract location names and dates from their queries
+- Be warm, encouraging, and make climate data feel accessible
 - Explain technical terms in simple language
-- Use analogies and examples when helpful
-- Keep responses concise but informative
-- If users ask about specific data, interpret it from the climate data provided
-- Add a touch of personality and humor when appropriate
-- Use emojis sparingly to keep things friendly 🌤️
-- If the data isn't available yet, encourage users to search for a location first`;
+- Keep responses concise and friendly
+
+You can extract search parameters when users mention locations and dates.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -46,6 +41,31 @@ Guidelines:
           { role: "system", content: systemPrompt },
           { role: "user", content: message },
         ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "extract_search_params",
+              description: "Extract location and date from user's climate search query",
+              parameters: {
+                type: "object",
+                properties: {
+                  location: {
+                    type: "string",
+                    description: "The location name mentioned by the user"
+                  },
+                  date: {
+                    type: "string",
+                    description: "The date in YYYY-MM-DD format. Convert relative dates to absolute dates based on today's date."
+                  }
+                },
+                required: [],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: "auto"
       }),
     });
 
@@ -81,10 +101,21 @@ Guidelines:
     }
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content;
+    const aiMessage = data.choices?.[0]?.message;
+    
+    let extractedParams = null;
+    if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
+      const toolCall = aiMessage.tool_calls[0];
+      if (toolCall.function.name === "extract_search_params") {
+        extractedParams = JSON.parse(toolCall.function.arguments);
+      }
+    }
 
     return new Response(
-      JSON.stringify({ reply }),
+      JSON.stringify({ 
+        reply: aiMessage?.content || "I'm here to help with your climate research!",
+        searchParams: extractedParams
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
