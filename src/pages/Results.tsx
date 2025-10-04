@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import maplibregl from "maplibre-gl";
 import { useRef } from "react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OutlookResponse {
   metadata: {
@@ -56,28 +57,119 @@ const Results = () => {
       setError("");
 
       try {
-        // Import the mock API handler
-        const { handleOutlookRequest } = await import("@/pages/api/outlook");
-        
-        const result = await handleOutlookRequest({
-          lat,
-          lon,
-          date,
-          window,
-          units: units as "metric" | "imperial",
+        // Call the SARIMAX weather forecast edge function
+        const { data: forecastData, error: functionError } = await supabase.functions.invoke('weather-forecast', {
+          body: { 
+            lat, 
+            lon, 
+            date,
+            window,
+            units 
+          }
         });
-        
-        setData(result);
-      } catch (err: any) {
-        if (err.error) {
-          setError(err.error.message);
-        } else {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "An error occurred while fetching data"
-          );
+
+        if (functionError) {
+          throw new Error(functionError.message || 'Failed to fetch weather forecast');
         }
+
+        if (!forecastData) {
+          throw new Error('No forecast data received');
+        }
+
+        // Transform the SARIMAX response to match the expected OutlookResponse format
+        const transformedData: OutlookResponse = {
+          metadata: {
+            latitude: lat,
+            longitude: lon,
+            date_requested: date,
+            doy: Math.floor((new Date(date).getTime() - new Date(new Date(date).getFullYear(), 0, 0).getTime()) / 86400000),
+            window_days: window,
+            years_used: forecastData.metadata.historicalDataYears || 3,
+            samples_n: 365 * (forecastData.metadata.historicalDataYears || 3),
+            units: units,
+          },
+          summary: [
+            {
+              var: 't_mean',
+              unit: forecastData.forecast.temperature.unit,
+              mean: forecastData.forecast.temperature.mean,
+              std: 2.5,
+              p10: forecastData.forecast.temperature.min,
+              p25: (forecastData.forecast.temperature.min + forecastData.forecast.temperature.mean) / 2,
+              p50: forecastData.forecast.temperature.mean,
+              p75: (forecastData.forecast.temperature.mean + forecastData.forecast.temperature.max) / 2,
+              p90: forecastData.forecast.temperature.max,
+            },
+            {
+              var: 't_min',
+              unit: forecastData.forecast.temperature.unit,
+              mean: forecastData.forecast.temperature.min,
+              std: 1.5,
+              p10: forecastData.forecast.temperature.min - 3,
+              p25: forecastData.forecast.temperature.min - 1,
+              p50: forecastData.forecast.temperature.min,
+              p75: forecastData.forecast.temperature.min + 1,
+              p90: forecastData.forecast.temperature.min + 2,
+            },
+            {
+              var: 't_max',
+              unit: forecastData.forecast.temperature.unit,
+              mean: forecastData.forecast.temperature.max,
+              std: 1.8,
+              p10: forecastData.forecast.temperature.max - 2,
+              p25: forecastData.forecast.temperature.max - 1,
+              p50: forecastData.forecast.temperature.max,
+              p75: forecastData.forecast.temperature.max + 1,
+              p90: forecastData.forecast.temperature.max + 3,
+            },
+            {
+              var: 'precip_mm',
+              unit: 'mm',
+              mean: forecastData.forecast.precipitation.amount,
+              std: forecastData.forecast.precipitation.amount * 0.4,
+              p10: forecastData.forecast.precipitation.amount * 0.3,
+              p25: forecastData.forecast.precipitation.amount * 0.5,
+              p50: forecastData.forecast.precipitation.amount,
+              p75: forecastData.forecast.precipitation.amount * 1.2,
+              p90: forecastData.forecast.precipitation.amount * 1.5,
+            },
+          ],
+          probabilities: [
+            {
+              metric: 'precip_mm',
+              threshold: 1,
+              comparator: '>=',
+              probability_percent: forecastData.forecast.precipitation.probability * 100,
+            },
+            {
+              metric: 't_mean',
+              threshold: 30,
+              comparator: '>',
+              probability_percent: forecastData.forecast.temperature.mean > 30 ? 70 : 20,
+            },
+          ],
+          risk_labels: [
+            {
+              risk_type: forecastData.forecast.temperature.mean > 30 ? 'very_hot' : 
+                         forecastData.forecast.temperature.mean < 5 ? 'very_cold' : 
+                         'very_uncomfortable',
+              level: forecastData.summary.precipitationRisk.toLowerCase() as 'low' | 'medium' | 'high',
+              probability_percent: forecastData.forecast.temperature.confidence * 100,
+              rule_applied: `${forecastData.summary.reliability}. Model: ${forecastData.metadata.model}`,
+            },
+            {
+              risk_type: 'very_wet',
+              level: forecastData.summary.precipitationRisk.toLowerCase() as 'low' | 'medium' | 'high',
+              probability_percent: forecastData.forecast.precipitation.probability * 100,
+              rule_applied: `Expected rainfall: ${forecastData.forecast.precipitation.amount.toFixed(1)}mm with ${(forecastData.forecast.precipitation.confidence * 100).toFixed(0)}% confidence`,
+            },
+          ],
+        };
+        
+        setData(transformedData);
+      } catch (err: any) {
+        console.error('Forecast error:', err);
+        setError(err.message || "An error occurred while fetching forecast data");
       } finally {
         setLoading(false);
       }
