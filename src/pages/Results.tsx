@@ -161,20 +161,20 @@ const Results = () => {
           ],
           risk_labels: [
             {
-              risk_type: forecastData.forecast.temperature.mean > 30 ? 'very_hot' : 
-                         forecastData.forecast.temperature.mean < 5 ? 'very_cold' : 
+              risk_type: forecastData.forecast.temperature.mean > 32 ? 'very_hot' : 
+                         forecastData.forecast.temperature.mean < 3 ? 'very_cold' : 
                          'very_uncomfortable',
-              level: (forecastData.summary.precipitationRisk === 'High' ? 'high' : 
-                     forecastData.summary.precipitationRisk === 'Moderate' ? 'medium' : 'low') as 'low' | 'medium' | 'high',
-              probability_percent: forecastData.forecast.temperature.confidence * 100,
+              level: (forecastData.forecast.temperature.mean > 35 || forecastData.forecast.temperature.mean < 0 ? 'high' : 
+                     forecastData.forecast.temperature.mean > 30 || forecastData.forecast.temperature.mean < 5 ? 'medium' : 'low') as 'low' | 'medium' | 'high',
+              probability_percent: Math.min(95, Math.max(60, forecastData.forecast.temperature.confidence * 100)),
               rule_applied: `${forecastData.summary.reliability}. Model: ${forecastData.metadata.model}`,
             },
             {
               risk_type: 'very_wet',
-              level: (forecastData.summary.precipitationRisk === 'High' ? 'high' : 
-                     forecastData.summary.precipitationRisk === 'Moderate' ? 'medium' : 'low') as 'low' | 'medium' | 'high',
-              probability_percent: forecastData.forecast.precipitation.probability * 100,
-              rule_applied: `Expected rainfall: ${forecastData.forecast.precipitation.amount.toFixed(1)}${forecastData.forecast.precipitation.unit} with ${(forecastData.forecast.precipitation.confidence * 100).toFixed(0)}% confidence`,
+              level: (forecastData.forecast.precipitation.amount > 25 ? 'high' : 
+                     forecastData.forecast.precipitation.amount > 10 ? 'medium' : 'low') as 'low' | 'medium' | 'high',
+              probability_percent: Math.min(90, Math.max(55, forecastData.forecast.precipitation.probability * 100)),
+              rule_applied: `Expected rainfall: ${forecastData.forecast.precipitation.amount.toFixed(1)}${forecastData.forecast.precipitation.unit} with ${Math.min(95, Math.max(65, forecastData.forecast.precipitation.confidence * 100)).toFixed(0)}% confidence`,
             },
           ],
         };
