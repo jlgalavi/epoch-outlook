@@ -31,6 +31,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const manualSearchRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -171,6 +172,10 @@ const Index = () => {
     }
   }, [isLoading]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
       {/* Header */}
@@ -245,10 +250,11 @@ const Index = () => {
                       <div className="flex justify-start animate-fade-in">
                         <div className="bg-muted rounded-2xl p-4 shadow-md">
                           <Loader2 className="h-5 w-5 animate-spin" />
-                        </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
                 </ScrollArea>
 
                 {/* Input */}
