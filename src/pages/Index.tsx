@@ -177,12 +177,12 @@ const Index = () => {
   }, [messages, isLoading]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-background via-[hsl(280_40%_18%)] to-[hsl(195_50%_20%)] flex flex-col">
       {/* Header */}
-      <header className="w-full py-4 px-6 border-b bg-background/80 backdrop-blur-sm">
+      <header className="w-full py-4 px-6 border-b bg-card/60 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
               Climate Outlook
             </h1>
           </div>
@@ -207,7 +207,7 @@ const Index = () => {
           </div>
 
           {/* Collapsible Chat Bar */}
-          <Card className="w-full shadow-2xl animate-fade-in">
+          <Card className="w-full shadow-2xl animate-fade-in border-primary/20 bg-card/80 backdrop-blur-sm">
             {!isChatExpanded ? (
               /* Collapsed Write Bar */
               <div className="p-4">
@@ -284,7 +284,7 @@ const Index = () => {
           </Card>
 
           {/* Manual Search Card */}
-          <Card ref={manualSearchRef} className="w-full p-6 shadow-lg animate-fade-in">
+          <Card ref={manualSearchRef} className="w-full p-6 shadow-lg animate-fade-in border-secondary/20 bg-card/80 backdrop-blur-sm">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Search className="h-5 w-5" />
               Manual Search
