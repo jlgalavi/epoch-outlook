@@ -39,7 +39,6 @@ const Index = () => {
   // Search state
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>();
-  const [showQuickSearch, setShowQuickSearch] = useState(false);
 
   const performSearch = (location: { lat: number; lon: number }, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
@@ -70,12 +69,6 @@ const Index = () => {
         role: "assistant",
         content: data.reply || "I'm sorry, I couldn't process that request.",
       };
-      
-      // Check if the response suggests a search
-      if (data.suggestedAction?.type === "search") {
-        setShowQuickSearch(true);
-        assistantMessage.content += "\n\nWould you like to search now? Use the quick search below!";
-      }
       
       setMessages((prev) => [...prev, assistantMessage]);
       setCharacterMood("happy");
@@ -137,11 +130,11 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          {/* Left: Character */}
-          <div className="flex flex-col items-center justify-center gap-6 lg:sticky lg:top-24">
+        <div className="w-full max-w-4xl mx-auto flex flex-col items-center gap-8">
+          {/* Character */}
+          <div className="flex flex-col items-center gap-6 animate-fade-in">
             <AnimatedCharacter isSpeaking={isLoading} mood={characterMood} />
-            <div className="text-center animate-fade-in">
+            <div className="text-center">
               <h2 className="text-3xl font-bold mb-2">Meet Clima</h2>
               <p className="text-muted-foreground">
                 Your AI-powered climate research companion
@@ -149,8 +142,43 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Right: Chat Interface */}
-          <Card className="flex flex-col h-[600px] shadow-2xl animate-fade-in">
+          {/* Manual Search Card */}
+          <Card className="w-full p-6 shadow-lg animate-fade-in">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Manual Search
+            </h3>
+            <div className="space-y-4">
+              <LocationPicker
+                value={selectedLocation || undefined}
+                onChange={setSelectedLocation}
+                searchEnabled={true}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => date < new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button onClick={handleQuickSearch} className="w-full" disabled={!selectedLocation || !selectedDate}>
+                <Search className="h-4 w-4 mr-2" />
+                Get Climate Outlook
+              </Button>
+            </div>
+          </Card>
+
+          {/* Chat Interface */}
+          <Card className="w-full flex flex-col h-[500px] shadow-2xl animate-fade-in">
             {/* Messages */}
             <ScrollArea className="flex-1 p-6">
               <div className="space-y-4">
@@ -179,47 +207,6 @@ const Index = () => {
                 )}
               </div>
             </ScrollArea>
-
-            {/* Quick Search Panel */}
-            {showQuickSearch && (
-              <div className="p-4 border-t bg-muted/30 animate-slide-in-right">
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Search className="h-4 w-4" />
-                  Quick Search
-                </h3>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <LocationPicker
-                      value={selectedLocation || undefined}
-                      onChange={setSelectedLocation}
-                      searchEnabled={true}
-                    />
-                    <div className="flex gap-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Select date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          disabled={(date) => date < new Date()}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    </div>
-                  </div>
-                  <Button onClick={handleQuickSearch} className="w-full" disabled={!selectedLocation || !selectedDate}>
-                    <Search className="h-4 w-4 mr-2" />
-                    Get Climate Outlook
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {/* Input */}
             <div className="p-4 border-t">
