@@ -401,7 +401,7 @@ const Results = () => {
                 <div className="text-center group">
                   <div className="text-sm font-medium text-muted-foreground mb-3">Daily Low</div>
                   <div className="text-5xl font-bold text-blue-500 transition-all group-hover:scale-110">
-                    {tMinData?.p50.toFixed(0)}°
+                    {tMinData?.p50.toFixed(1)}°
                   </div>
                 </div>
                 <div className="relative h-40 w-2">
@@ -414,7 +414,7 @@ const Results = () => {
                 <div className="text-center group">
                   <div className="text-sm font-medium text-muted-foreground mb-3">Daily High</div>
                   <div className="text-5xl font-bold text-red-500 transition-all group-hover:scale-110">
-                    {tMaxData?.p50.toFixed(0)}°
+                    {tMaxData?.p50.toFixed(1)}°
                   </div>
                 </div>
               </div>
@@ -459,7 +459,7 @@ const Results = () => {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <div className="text-6xl font-bold bg-gradient-to-r from-blue-500 to-blue-300 bg-clip-text text-transparent">
-                      {precipProb?.probability_percent || 0}%
+                      {(precipProb?.probability_percent || 0).toFixed(1)}%
                     </div>
                     <div className="text-sm text-muted-foreground mt-2 font-medium">Rain Chance</div>
                   </div>
@@ -500,7 +500,7 @@ const Results = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-sky-500"></div>
-                      <span>Rain chance: {precipProb?.probability_percent || 0}%</span>
+                      <span>Rain chance: {(precipProb?.probability_percent || 0).toFixed(1)}%</span>
                     </div>
                     {data.summary.find(s => s.var === 'wind10m') && (
                       <div className="flex items-center gap-2">

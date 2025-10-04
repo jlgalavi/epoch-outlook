@@ -127,7 +127,7 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
                 </Badge>
               </div>
               <p className="text-6xl font-bold my-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                {risk.probability_percent}%
+                {risk.probability_percent.toFixed(1)}%
               </p>
               <p className="text-lg text-muted-foreground mb-4">
                 {config.description}
@@ -179,7 +179,7 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
               <div className="space-y-3">
                 <div className="flex items-baseline gap-2">
                   <p className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                    {risk.probability_percent}%
+                    {risk.probability_percent.toFixed(1)}%
                   </p>
                   <p className="text-sm text-muted-foreground">chance</p>
                 </div>
