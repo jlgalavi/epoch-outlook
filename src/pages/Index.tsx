@@ -221,7 +221,7 @@ const Index = () => {
               </div>
             ) : (
               /* Expanded Chat Interface */
-              <div className="flex flex-col h-[400px]">
+              <div className="flex flex-col h-[280px]">
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-6">
                   <div className="space-y-4">
