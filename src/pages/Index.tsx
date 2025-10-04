@@ -4,12 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Loader2, Search, ChevronDown, Cloud, Sun, CloudRain } from "lucide-react";
 import { AnimatedCharacter } from "@/components/AnimatedCharacter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { LocationPicker } from "@/components/LocationPicker";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -46,7 +45,6 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedDay, setSelectedDay] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [windowDays, setWindowDays] = useState(15);
   const [units, setUnits] = useState("metric");
   
@@ -218,9 +216,19 @@ const Index = () => {
   }, [messages, isLoading]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(210_90%_92%)] via-[hsl(185_100%_88%)] to-[hsl(160_80%_85%)] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(200_100%_88%)] via-[hsl(190_95%_85%)] to-[hsl(45_100%_88%)] flex flex-col relative overflow-hidden">
+      {/* Weather decorative elements */}
+      <div className="absolute top-10 right-10 opacity-20">
+        <Cloud className="h-32 w-32 text-white" />
+      </div>
+      <div className="absolute top-40 left-20 opacity-15">
+        <Sun className="h-24 w-24 text-yellow-300" />
+      </div>
+      <div className="absolute bottom-20 right-1/4 opacity-20">
+        <CloudRain className="h-28 w-28 text-blue-300" />
+      </div>
       {/* Header */}
-      <header className="w-full py-4 px-6 border-b border-white/20 bg-white/30 backdrop-blur-md">
+      <header className="w-full py-4 px-6 border-b border-white/20 bg-white/30 backdrop-blur-md relative z-10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
@@ -234,7 +242,7 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-6">
+      <main className="flex-1 flex items-center justify-center p-6 relative z-10">
         <div className="w-full max-w-4xl mx-auto flex flex-col items-center gap-8">
           {/* Character */}
           <div className="flex flex-col items-center gap-6 animate-fade-in">
@@ -248,7 +256,7 @@ const Index = () => {
           </div>
 
           {/* Collapsible Chat Bar */}
-          <Card className="w-full shadow-xl animate-fade-in border-white/40 bg-white/40 backdrop-blur-md">
+          <Card className="w-full shadow-xl animate-fade-in border-white/40 bg-white/40 backdrop-blur-md rounded-2xl">
             {!isChatExpanded ? (
               /* Collapsed Write Bar */
               <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg">
@@ -325,7 +333,7 @@ const Index = () => {
           </Card>
 
           {/* Manual Search Card */}
-          <Card ref={manualSearchRef} className="w-full p-6 shadow-xl animate-fade-in border-white/40 bg-white/40 backdrop-blur-md">
+          <Card ref={manualSearchRef} className="w-full p-6 shadow-xl animate-fade-in border-white/40 bg-white/40 backdrop-blur-md rounded-2xl">
             <div className="space-y-4">
               <LocationPicker
                 value={selectedLocation || undefined}
@@ -381,49 +389,47 @@ const Index = () => {
                   </Select>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Cloud className="h-3 w-3" />
                 Forecast limited to 1 year ahead (SARIMAX model constraint)
               </p>
               
-              {/* Advanced Settings */}
-              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between">
-                    Advanced Settings
-                    {advancedOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="window">Forecast Window: {windowDays} days</Label>
-                    <Slider
-                      id="window"
-                      min={7}
-                      max={30}
-                      step={1}
-                      value={[windowDays]}
-                      onValueChange={(value) => setWindowDays(value[0])}
-                      className="w-full"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Number of days to analyze for climate outlook
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="units">Temperature Units</Label>
-                    <Select value={units} onValueChange={setUnits}>
-                      <SelectTrigger id="units">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="metric">Celsius (°C)</SelectItem>
-                        <SelectItem value="imperial">Fahrenheit (°F)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+              {/* Forecast Window Setting */}
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="window" className="flex items-center gap-2">
+                  <Sun className="h-4 w-4" />
+                  Forecast Window: {windowDays} days
+                </Label>
+                <Slider
+                  id="window"
+                  min={3}
+                  max={30}
+                  step={1}
+                  value={[windowDays]}
+                  onValueChange={(value) => setWindowDays(value[0])}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CloudRain className="h-3 w-3" />
+                  Number of days to analyze for climate outlook
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="units" className="flex items-center gap-2">
+                  <Sun className="h-4 w-4" />
+                  Temperature Units
+                </Label>
+                <Select value={units} onValueChange={setUnits}>
+                  <SelectTrigger id="units">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="metric">Celsius (°C)</SelectItem>
+                    <SelectItem value="imperial">Fahrenheit (°F)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               
               <Button onClick={handleQuickSearch} className="w-full" disabled={!selectedLocation || !selectedDate}>
                 <Search className="h-4 w-4 mr-2" />
