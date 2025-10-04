@@ -415,23 +415,13 @@ const Results = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 relative z-10">
-        {/* Featured Risk - Dramatic Alert Style */}
+        {/* Featured Risk - Cleaner Design */}
         <section className="animate-fade-in">
-          <div className="relative overflow-hidden rounded-3xl border-4 border-white/50 bg-gradient-to-br from-red-500/20 via-orange-500/20 to-yellow-500/20 backdrop-blur-md shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-orange-500/10 to-yellow-500/10 animate-pulse" />
-            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500" />
-            <div className="relative p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-4 bg-red-600 rounded-2xl shadow-xl animate-pulse">
-                  <AlertCircle className="h-10 w-10 text-white" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-red-700 uppercase tracking-wider">Primary Weather Alert</div>
-                  <div className="text-2xl font-bold text-foreground mt-1">Heightened Risk Detected</div>
-                </div>
-              </div>
-              <RiskCards data={[highestRisk]} featured />
-            </div>
+          <h2 className="text-2xl font-bold mb-4 text-foreground">
+            Primary Weather Alert
+          </h2>
+          <div className="relative">
+            <RiskCards data={[highestRisk]} featured />
           </div>
         </section>
 
@@ -525,13 +515,13 @@ const Results = () => {
           </Card>
         </section>
 
-        {/* Other Risks - Only show if there are meaningful risks */}
-        {otherRisks.filter(r => r.probability_percent > 10).length > 0 && (
+        {/* Other Risks - Show all secondary risks */}
+        {otherRisks.length > 0 && (
           <section className="animate-fade-in">
             <h2 className="text-2xl font-bold mb-4">
               Additional Risk Factors
             </h2>
-            <RiskCards data={otherRisks.filter(r => r.probability_percent > 10)} />
+            <RiskCards data={otherRisks} />
           </section>
         )}
 
