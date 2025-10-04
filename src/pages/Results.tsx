@@ -173,8 +173,8 @@ const Results = () => {
               risk_type: 'very_wet',
               level: (forecastData.forecast.precipitation.amount > 25 ? 'high' : 
                      forecastData.forecast.precipitation.amount > 10 ? 'medium' : 'low') as 'low' | 'medium' | 'high',
-              probability_percent: Math.min(90, Math.max(55, forecastData.forecast.precipitation.probability * 100)),
-              rule_applied: `Expected rainfall: ${forecastData.forecast.precipitation.amount.toFixed(1)}${forecastData.forecast.precipitation.unit} with ${Math.min(95, Math.max(65, forecastData.forecast.precipitation.confidence * 100)).toFixed(0)}% confidence`,
+              probability_percent: forecastData.forecast.precipitation.amount > 1 ? Math.min(90, Math.max(55, forecastData.forecast.precipitation.probability * 100)) : 0,
+              rule_applied: `Expected rainfall: ${forecastData.forecast.precipitation.amount.toFixed(1)}${forecastData.forecast.precipitation.unit}. Probability: ${(forecastData.forecast.precipitation.probability * 100).toFixed(0)}%`,
             },
           ],
         };
@@ -375,28 +375,37 @@ const Results = () => {
           <Button
             variant="ghost"
             onClick={() => navigate("/")}
-            className="mb-3 hover:bg-white/50"
+            className="mb-4 hover:bg-white/50"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             New Search
           </Button>
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-3">
-                Climate Outlook
-              </h1>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 shadow-sm">
-                  <span>📍</span>
-                  <span className="font-medium">{data.metadata.latitude.toFixed(2)}°, {data.metadata.longitude.toFixed(2)}°</span>
+          <div className="flex flex-col gap-4">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+              Climate Outlook Report
+            </h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-white/70 backdrop-blur-sm px-5 py-3 rounded-xl border-2 border-white/50 shadow-md">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Location</div>
+                <div className="text-lg font-bold text-foreground">
+                  {data.metadata.latitude.toFixed(4)}°N, {data.metadata.longitude.toFixed(4)}°E
                 </div>
-                <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 shadow-sm">
-                  <span>📅</span>
-                  <span className="font-medium">{new Date(data.metadata.date_requested).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              </div>
+              <div className="bg-white/70 backdrop-blur-sm px-5 py-3 rounded-xl border-2 border-white/50 shadow-md">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Target Date</div>
+                <div className="text-lg font-bold text-foreground">
+                  {new Date(data.metadata.date_requested).toLocaleDateString('en-US', { 
+                    weekday: 'short',
+                    month: 'long', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                  })}
                 </div>
-                <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 shadow-sm">
-                  <span>📊</span>
-                  <span className="font-medium">±{data.metadata.window_days} days window</span>
+              </div>
+              <div className="bg-white/70 backdrop-blur-sm px-5 py-3 rounded-xl border-2 border-white/50 shadow-md">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Analysis Window</div>
+                <div className="text-lg font-bold text-foreground">
+                  ±{data.metadata.window_days} Days
                 </div>
               </div>
             </div>
@@ -406,126 +415,129 @@ const Results = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 relative z-10">
-        {/* Featured Risk - Larger and more prominent */}
+        {/* Featured Risk - Dramatic Alert Style */}
         <section className="animate-fade-in">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <span className="text-3xl">⚠️</span>
-            Primary Weather Alert
-          </h2>
-          <RiskCards data={[highestRisk]} featured />
+          <div className="relative overflow-hidden rounded-3xl border-4 border-white/50 bg-gradient-to-br from-red-500/20 via-orange-500/20 to-yellow-500/20 backdrop-blur-md shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-orange-500/10 to-yellow-500/10 animate-pulse" />
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500" />
+            <div className="relative p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-4 bg-red-600 rounded-2xl shadow-xl animate-pulse">
+                  <AlertCircle className="h-10 w-10 text-white" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-red-700 uppercase tracking-wider">Primary Weather Alert</div>
+                  <div className="text-2xl font-bold text-foreground mt-1">Heightened Risk Detected</div>
+                </div>
+              </div>
+              <RiskCards data={[highestRisk]} featured />
+            </div>
+          </div>
         </section>
 
-        {/* Weather Visuals */}
+        {/* Weather Forecast Cards */}
         <section className="grid md:grid-cols-2 gap-6 animate-fade-in">
-          {/* Temperature Visual */}
-          <Card className="overflow-hidden border-2 border-white/40 bg-white/50 backdrop-blur-md hover:shadow-2xl transition-all rounded-2xl">
+          {/* Temperature Card - Redesigned */}
+          <Card className="relative overflow-hidden border-3 border-white/50 bg-gradient-to-br from-orange-50/80 to-red-50/80 backdrop-blur-md hover:shadow-2xl transition-all rounded-3xl">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500" />
             <CardContent className="pt-8 pb-6 px-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-gradient-to-br from-red-500 to-orange-400 rounded-2xl shadow-lg">
-                  <span className="text-4xl">🌡️</span>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-foreground">Temperature Forecast</h3>
+                <div className="p-3 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a1 1 0 011 1v6.268l2.121 2.121a1 1 0 01-1.414 1.414L9 10.414V3a1 1 0 011-1z"/>
+                    <path d="M13.95 13.536a5 5 0 10-7.9 0A3.5 3.5 0 0010 20a3.5 3.5 0 003.95-6.464z"/>
+                  </svg>
                 </div>
-                <h3 className="text-2xl font-bold">Temperature</h3>
               </div>
-              <div className="flex items-center justify-around py-6">
-                <div className="text-center group">
-                  <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Daily Low</div>
-                  <div className="text-5xl font-bold text-blue-600 transition-all group-hover:scale-110 drop-shadow-lg">
+              
+              <div className="grid grid-cols-3 gap-6 mb-6">
+                <div className="text-center">
+                  <div className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Low</div>
+                  <div className="text-5xl font-black text-blue-600 mb-1">
                     {tMinData?.p50.toFixed(0)}°
                   </div>
+                  <div className="h-2 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-16 mx-auto" />
                 </div>
-                <div className="relative h-32 w-3">
-                  <div 
-                    className="absolute inset-0 bg-gradient-to-b from-red-500 via-yellow-400 to-blue-500 rounded-full shadow-xl"
-                    style={{ width: '12px', left: '-4.5px' }}
-                  />
-                  <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-6 h-6 bg-white rounded-full border-4 border-primary shadow-lg animate-pulse" />
+                
+                <div className="text-center">
+                  <div className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-2">Avg</div>
+                  <div className="text-5xl font-black text-orange-600 mb-1">
+                    {tempData?.p50.toFixed(0)}°
+                  </div>
+                  <div className="h-2 bg-gradient-to-r from-orange-600 to-orange-400 rounded-full w-16 mx-auto" />
                 </div>
-                <div className="text-center group">
-                  <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Daily High</div>
-                  <div className="text-5xl font-bold text-red-600 transition-all group-hover:scale-110 drop-shadow-lg">
+                
+                <div className="text-center">
+                  <div className="text-xs font-bold text-red-600 uppercase tracking-wider mb-2">High</div>
+                  <div className="text-5xl font-black text-red-600 mb-1">
                     {tMaxData?.p50.toFixed(0)}°
                   </div>
+                  <div className="h-2 bg-gradient-to-r from-red-600 to-red-400 rounded-full w-16 mx-auto" />
                 </div>
               </div>
-              <div className="text-center pt-4 border-t border-white/40 bg-white/30 rounded-lg px-4 py-3 mt-4">
-                <p className="text-sm font-medium">
-                  Average Temperature: <span className="text-2xl font-bold text-foreground ml-2">{tempData?.p50.toFixed(1)}°C</span>
-                </p>
+              
+              <div className="bg-white/60 rounded-2xl p-4 border-2 border-white/70">
+                <div className="text-sm font-semibold text-muted-foreground text-center">
+                  Expected Range: {tMinData?.p50.toFixed(1)}°C - {tMaxData?.p50.toFixed(1)}°C
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Precipitation Visual */}
-          <Card className="overflow-hidden border-2 border-white/40 bg-white/50 backdrop-blur-md hover:shadow-2xl transition-all rounded-2xl">
+          {/* Precipitation Card - Redesigned */}
+          <Card className="relative overflow-hidden border-3 border-white/50 bg-gradient-to-br from-sky-50/80 to-blue-50/80 backdrop-blur-md hover:shadow-2xl transition-all rounded-3xl">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 to-sky-400" />
             <CardContent className="pt-8 pb-6 px-6">
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-foreground">Precipitation Forecast</h3>
                 <div className="p-3 bg-gradient-to-br from-blue-500 to-sky-400 rounded-2xl shadow-lg">
-                  <span className="text-4xl">💧</span>
-                </div>
-                <h3 className="text-2xl font-bold">Precipitation</h3>
-              </div>
-              <div className="flex items-center justify-center py-6">
-                <div className="relative w-48 h-48">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="96"
-                      cy="96"
-                      r="80"
-                      stroke="hsl(var(--muted))"
-                      strokeWidth="16"
-                      fill="none"
-                      opacity="0.2"
-                    />
-                    <circle
-                      cx="96"
-                      cy="96"
-                      r="80"
-                      stroke="url(#rainGradient)"
-                      strokeWidth="16"
-                      fill="none"
-                      strokeDasharray={`${(precipProb?.probability_percent || 0) * 5.03} 503`}
-                      strokeLinecap="round"
-                      className="transition-all duration-1000 drop-shadow-lg"
-                    />
-                    <defs>
-                      <linearGradient id="rainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="hsl(200, 90%, 50%)" />
-                        <stop offset="100%" stopColor="hsl(210, 85%, 60%)" />
-                      </linearGradient>
-                    </defs>
+                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v9A2.5 2.5 0 005.5 17h9a2.5 2.5 0 002.5-2.5v-9A2.5 2.5 0 0014.5 3h-9zm0 2a.5.5 0 00-.5.5v9a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-9a.5.5 0 00-.5-.5h-9z" clipRule="evenodd"/>
+                    <path d="M10 7a1 1 0 011 1v4a1 1 0 11-2 0V8a1 1 0 011-1z"/>
                   </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent drop-shadow-lg">
-                      {(precipProb?.probability_percent || 0).toFixed(0)}%
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-2 font-semibold uppercase tracking-wider">Rain Chance</div>
+                </div>
+              </div>
+              
+              <div className="text-center mb-6">
+                <div className="text-8xl font-black bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent mb-3">
+                  {(precipProb?.probability_percent || 0).toFixed(0)}%
+                </div>
+                <div className="text-lg font-bold text-muted-foreground uppercase tracking-wider">
+                  Chance of Rain
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="bg-white/60 rounded-2xl p-4 border-2 border-white/70">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-muted-foreground">Expected Amount</span>
+                    <span className="text-2xl font-black text-foreground">{precipData?.p50.toFixed(1)} mm</span>
                   </div>
                 </div>
-              </div>
-              <div className="text-center pt-4 border-t border-white/40 bg-white/30 rounded-lg px-4 py-3 mt-4">
-                <p className="text-sm font-medium">
-                  Expected: <span className="text-2xl font-bold text-foreground ml-2">{precipData?.p50.toFixed(1)} mm</span>
-                </p>
+                
+                <div className="bg-white/60 rounded-2xl overflow-hidden border-2 border-white/70">
+                  <div className="h-3 bg-gradient-to-r from-blue-600 to-sky-400" 
+                       style={{ width: `${Math.min(100, (precipProb?.probability_percent || 0))}%` }} />
+                </div>
               </div>
             </CardContent>
           </Card>
         </section>
 
-        {/* Other Risks */}
-        {otherRisks.length > 0 && (
+        {/* Other Risks - Only show if there are meaningful risks */}
+        {otherRisks.filter(r => r.probability_percent > 10).length > 0 && (
           <section className="animate-fade-in">
-            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-              <span className="text-2xl">📋</span>
+            <h2 className="text-2xl font-bold mb-4">
               Additional Risk Factors
             </h2>
-            <RiskCards data={otherRisks} />
+            <RiskCards data={otherRisks.filter(r => r.probability_percent > 10)} />
           </section>
         )}
 
         {/* Enhanced Climate Map */}
         <section className="animate-fade-in">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <span className="text-2xl">🗺️</span>
+          <h2 className="text-2xl font-bold mb-4">
             Location Overview
           </h2>
           <Card className="border-2 border-white/40 bg-white/50 backdrop-blur-md rounded-2xl overflow-hidden">
@@ -591,8 +603,7 @@ const Results = () => {
 
         {/* Downloads */}
         <section className="animate-fade-in">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <span className="text-2xl">💾</span>
+          <h2 className="text-2xl font-bold mb-4">
             Export Data
           </h2>
           <Card className="border-2 border-white/40 bg-white/50 backdrop-blur-md rounded-2xl">
@@ -610,7 +621,7 @@ const Results = () => {
         {/* Disclaimer Footer */}
         <div className="text-center py-6 px-6 bg-white/40 backdrop-blur-sm rounded-2xl border border-white/40">
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            📊 Long-range climate outlook based on historical patterns — not a short-term weather forecast. 
+            Long-range climate outlook based on historical patterns — not a short-term weather forecast. 
             Data represents statistical probabilities and should be used as guidance only.
           </p>
         </div>
