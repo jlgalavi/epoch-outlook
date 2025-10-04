@@ -177,7 +177,7 @@ const Index = () => {
   }, [messages, isLoading]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(280_90%_95%)] via-[hsl(195_100%_90%)] to-[hsl(330_85%_92%)] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(210_90%_92%)] via-[hsl(185_100%_88%)] to-[hsl(160_80%_85%)] flex flex-col">
       {/* Header */}
       <header className="w-full py-4 px-6 border-b border-white/20 bg-white/30 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -285,10 +285,6 @@ const Index = () => {
 
           {/* Manual Search Card */}
           <Card ref={manualSearchRef} className="w-full p-6 shadow-xl animate-fade-in border-white/40 bg-white/40 backdrop-blur-md">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Manual Search
-            </h3>
             <div className="space-y-4">
               <LocationPicker
                 value={selectedLocation || undefined}
