@@ -124,7 +124,7 @@ const Results = () => {
             },
             {
               var: 'precip_mm',
-              unit: 'mm',
+              unit: forecastData.forecast.precipitation.unit,
               mean: forecastData.forecast.precipitation.amount,
               std: forecastData.forecast.precipitation.amount * 0.4,
               p10: forecastData.forecast.precipitation.amount * 0.3,
@@ -132,6 +132,17 @@ const Results = () => {
               p50: forecastData.forecast.precipitation.amount,
               p75: forecastData.forecast.precipitation.amount * 1.2,
               p90: forecastData.forecast.precipitation.amount * 1.5,
+            },
+            {
+              var: 'wind10m',
+              unit: forecastData.forecast.wind?.unit || 'km/h',
+              mean: forecastData.forecast.wind?.speed || 0,
+              std: (forecastData.forecast.wind?.speed || 0) * 0.3,
+              p10: (forecastData.forecast.wind?.speed || 0) * 0.6,
+              p25: (forecastData.forecast.wind?.speed || 0) * 0.8,
+              p50: forecastData.forecast.wind?.speed || 0,
+              p75: (forecastData.forecast.wind?.speed || 0) * 1.2,
+              p90: forecastData.forecast.wind?.gusts || (forecastData.forecast.wind?.speed || 0) * 1.5,
             },
           ],
           probabilities: [
@@ -153,15 +164,17 @@ const Results = () => {
               risk_type: forecastData.forecast.temperature.mean > 30 ? 'very_hot' : 
                          forecastData.forecast.temperature.mean < 5 ? 'very_cold' : 
                          'very_uncomfortable',
-              level: forecastData.summary.precipitationRisk.toLowerCase() as 'low' | 'medium' | 'high',
+              level: (forecastData.summary.precipitationRisk === 'High' ? 'high' : 
+                     forecastData.summary.precipitationRisk === 'Moderate' ? 'medium' : 'low') as 'low' | 'medium' | 'high',
               probability_percent: forecastData.forecast.temperature.confidence * 100,
               rule_applied: `${forecastData.summary.reliability}. Model: ${forecastData.metadata.model}`,
             },
             {
               risk_type: 'very_wet',
-              level: forecastData.summary.precipitationRisk.toLowerCase() as 'low' | 'medium' | 'high',
+              level: (forecastData.summary.precipitationRisk === 'High' ? 'high' : 
+                     forecastData.summary.precipitationRisk === 'Moderate' ? 'medium' : 'low') as 'low' | 'medium' | 'high',
               probability_percent: forecastData.forecast.precipitation.probability * 100,
-              rule_applied: `Expected rainfall: ${forecastData.forecast.precipitation.amount.toFixed(1)}mm with ${(forecastData.forecast.precipitation.confidence * 100).toFixed(0)}% confidence`,
+              rule_applied: `Expected rainfall: ${forecastData.forecast.precipitation.amount.toFixed(1)}${forecastData.forecast.precipitation.unit} with ${(forecastData.forecast.precipitation.confidence * 100).toFixed(0)}% confidence`,
             },
           ],
         };
