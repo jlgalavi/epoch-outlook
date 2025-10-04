@@ -176,6 +176,13 @@ const Results = () => {
               probability_percent: forecastData.forecast.precipitation.amount > 1 ? Math.min(90, Math.max(55, forecastData.forecast.precipitation.probability * 100)) : 0,
               rule_applied: `Expected rainfall: ${forecastData.forecast.precipitation.amount.toFixed(1)}${forecastData.forecast.precipitation.unit}. Probability: ${(forecastData.forecast.precipitation.probability * 100).toFixed(0)}%`,
             },
+            {
+              risk_type: 'very_windy',
+              level: ((forecastData.forecast.wind?.speed || 0) > 40 ? 'high' : 
+                     (forecastData.forecast.wind?.speed || 0) > 25 ? 'medium' : 'low') as 'low' | 'medium' | 'high',
+              probability_percent: (forecastData.forecast.wind?.speed || 0) > 10 ? Math.min(85, Math.max(40, 50 + (forecastData.forecast.wind?.speed || 0))) : 20,
+              rule_applied: `Wind speed: ${(forecastData.forecast.wind?.speed || 0).toFixed(1)} ${forecastData.forecast.wind?.unit || 'km/h'}. Gusts up to ${(forecastData.forecast.wind?.gusts || forecastData.forecast.wind?.speed || 0).toFixed(1)} ${forecastData.forecast.wind?.unit || 'km/h'}`,
+            },
           ],
         };
         
