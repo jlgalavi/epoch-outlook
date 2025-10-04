@@ -39,6 +39,7 @@ const Index = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [characterMood, setCharacterMood] = useState<"happy" | "thinking" | "excited">("happy");
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
   
   // Search state
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -86,7 +87,7 @@ const Index = () => {
       if (data.searchParams) {
         const { location, date } = data.searchParams;
         
-        // If we have a location, geocode it
+        // If we have a location, geocode it and populate the manual search
         if (location) {
           try {
             const geoResponse = await fetch(
@@ -105,26 +106,18 @@ const Index = () => {
           }
         }
         
-        // If we have a date, set it
+        // If we have a date, populate the manual search
         if (date) {
           setSelectedDate(new Date(date));
         }
         
-        // If we have both, navigate to results
-        if (location && date) {
-          setTimeout(() => {
-            const geoResponse = fetch(
-              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`
-            ).then(res => res.json()).then(geoData => {
-              if (geoData && geoData[0]) {
-                const coords = {
-                  lat: parseFloat(geoData[0].lat),
-                  lon: parseFloat(geoData[0].lon)
-                };
-                performSearch(coords, new Date(date));
-              }
-            });
-          }, 1000);
+        // Show a message that the search fields have been populated
+        if (location || date) {
+          const followUpMessage: Message = {
+            role: "assistant",
+            content: "I've populated the search fields below with the information you provided. Please review and click 'Get Climate Outlook' when ready!",
+          };
+          setMessages((prev) => [...prev, followUpMessage]);
         }
       }
       
@@ -187,7 +180,7 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-7xl mx-auto flex flex-col items-center gap-8">
+        <div className="w-full max-w-4xl mx-auto flex flex-col items-center gap-8">
           {/* Character */}
           <div className="flex flex-col items-center gap-6 animate-fade-in">
             <AnimatedCharacter isSpeaking={isLoading} mood={characterMood} />
@@ -199,139 +192,160 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Desktop Layout: Map Left, Chat Right */}
-          <div className="w-full flex flex-col lg:flex-row gap-8">
-            {/* Manual Search Card - LEFT on desktop */}
-            <Card className="w-full lg:w-1/2 p-6 shadow-lg animate-fade-in order-2 lg:order-1">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Manual Search
-              </h3>
-              <div className="space-y-4">
-                <LocationPicker
-                  value={selectedLocation || undefined}
-                  onChange={setSelectedLocation}
-                  searchEnabled={true}
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full gap-2">
-                      <Calendar className="h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      disabled={(date) => date < new Date() || date > maxDate}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <p className="text-xs text-muted-foreground">
-                  Forecast limited to 1 year ahead (SARIMAX model constraint)
-                </p>
-                
-                {/* Advanced Settings */}
-                <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-between">
-                      Advanced Settings
-                      {advancedOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="window">Forecast Window: {windowDays} days</Label>
-                      <Slider
-                        id="window"
-                        min={7}
-                        max={30}
-                        step={1}
-                        value={[windowDays]}
-                        onValueChange={(value) => setWindowDays(value[0])}
-                        className="w-full"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Number of days to analyze for climate outlook
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="units">Temperature Units</Label>
-                      <Select value={units} onValueChange={setUnits}>
-                        <SelectTrigger id="units">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="metric">Celsius (°C)</SelectItem>
-                          <SelectItem value="imperial">Fahrenheit (°F)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-                
-                <Button onClick={handleQuickSearch} className="w-full" disabled={!selectedLocation || !selectedDate}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Get Climate Outlook
-                </Button>
-              </div>
-            </Card>
-
-            {/* Chat Interface - RIGHT on desktop */}
-            <Card className="w-full lg:w-1/2 flex flex-col h-[500px] lg:h-[600px] shadow-2xl animate-fade-in order-1 lg:order-2">
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-6">
-                <div className="space-y-4">
-                  {messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
-                    >
-                      <div
-                        className={`max-w-[80%] rounded-2xl p-4 ${
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground shadow-lg"
-                            : "bg-muted shadow-md"
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start animate-fade-in">
-                      <div className="bg-muted rounded-2xl p-4 shadow-md">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-
-              {/* Input */}
-              <div className="p-4 border-t">
+          {/* Collapsible Chat Bar */}
+          <Card className="w-full shadow-2xl animate-fade-in">
+            {!isChatExpanded ? (
+              /* Collapsed Write Bar */
+              <div className="p-4">
                 <div className="flex gap-2">
                   <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Ask me about climate data, locations, or trends..."
-                    disabled={isLoading}
+                    onFocus={() => setIsChatExpanded(true)}
+                    placeholder="Ask Clima about climate data... (click to expand)"
                     className="text-base"
                   />
-                  <Button onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon" className="shrink-0">
+                  <Button onClick={() => setIsChatExpanded(true)} size="icon" className="shrink-0">
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Try: "What's the weather outlook for Miami next month?"
-                </p>
               </div>
-            </Card>
-          </div>
+            ) : (
+              /* Expanded Chat Interface */
+              <div className="flex flex-col h-[400px]">
+                {/* Messages */}
+                <ScrollArea className="flex-1 p-6">
+                  <div className="space-y-4">
+                    {messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
+                      >
+                        <div
+                          className={`max-w-[80%] rounded-2xl p-4 ${
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground shadow-lg"
+                              : "bg-muted shadow-md"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {isLoading && (
+                      <div className="flex justify-start animate-fade-in">
+                        <div className="bg-muted rounded-2xl p-4 shadow-md">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+
+                {/* Input */}
+                <div className="p-4 border-t">
+                  <div className="flex gap-2">
+                    <Input
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Ask me about climate data, locations, or trends..."
+                      disabled={isLoading}
+                      className="text-base"
+                    />
+                    <Button onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon" className="shrink-0">
+                      <Send className="h-4 w-4" />
+                    </Button>
+                    <Button onClick={() => setIsChatExpanded(false)} variant="ghost" size="icon" className="shrink-0">
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Try: "What's the weather outlook for Miami next month?"
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Manual Search Card */}
+          <Card className="w-full p-6 shadow-lg animate-fade-in">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Manual Search
+            </h3>
+            <div className="space-y-4">
+              <LocationPicker
+                value={selectedLocation || undefined}
+                onChange={setSelectedLocation}
+                searchEnabled={true}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => date < new Date() || date > maxDate}
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Forecast limited to 1 year ahead (SARIMAX model constraint)
+              </p>
+              
+              {/* Advanced Settings */}
+              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between">
+                    Advanced Settings
+                    {advancedOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="window">Forecast Window: {windowDays} days</Label>
+                    <Slider
+                      id="window"
+                      min={7}
+                      max={30}
+                      step={1}
+                      value={[windowDays]}
+                      onValueChange={(value) => setWindowDays(value[0])}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Number of days to analyze for climate outlook
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="units">Temperature Units</Label>
+                    <Select value={units} onValueChange={setUnits}>
+                      <SelectTrigger id="units">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="metric">Celsius (°C)</SelectItem>
+                        <SelectItem value="imperial">Fahrenheit (°F)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              
+              <Button onClick={handleQuickSearch} className="w-full" disabled={!selectedLocation || !selectedDate}>
+                <Search className="h-4 w-4 mr-2" />
+                Get Climate Outlook
+              </Button>
+            </div>
+          </Card>
         </div>
       </main>
     </div>
