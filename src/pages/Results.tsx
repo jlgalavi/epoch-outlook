@@ -182,29 +182,32 @@ const Results = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-[image:var(--gradient-hero)] text-white py-12 px-4">
+      <div className="bg-[image:var(--gradient-hero)] text-white py-8 px-4">
         <div className="max-w-7xl mx-auto">
           <Button
             variant="ghost"
             onClick={() => navigate("/")}
-            className="mb-6 text-white hover:bg-white/10"
+            className="mb-4 text-white hover:bg-white/10"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             New Search
           </Button>
-          <div className="flex items-start justify-between gap-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-bold mb-4">Climate Outlook</h1>
-              <div className="text-white/90 space-y-2 text-sm">
-                <p>
-                  📍 {data.metadata.latitude.toFixed(4)}°N, {data.metadata.longitude.toFixed(4)}°E
-                </p>
-                <p>
-                  📅 {data.metadata.date_requested} (DOY {data.metadata.doy})
-                </p>
-                <p>
-                  📊 {data.metadata.samples_n} samples from {data.metadata.years_used} years (±{data.metadata.window_days} days)
-                </p>
+              <h1 className="text-4xl font-bold mb-3">Climate Outlook</h1>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+                  <span>📍</span>
+                  <span>{data.metadata.latitude.toFixed(2)}°, {data.metadata.longitude.toFixed(2)}°</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+                  <span>📅</span>
+                  <span>{new Date(data.metadata.date_requested).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+                  <span>📊</span>
+                  <span>±{data.metadata.window_days} days window</span>
+                </div>
               </div>
             </div>
           </div>
