@@ -142,41 +142,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Manual Search Card */}
-          <Card className="w-full p-6 shadow-lg animate-fade-in">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Manual Search
-            </h3>
-            <div className="space-y-4">
-              <LocationPicker
-                value={selectedLocation || undefined}
-                onChange={setSelectedLocation}
-                searchEnabled={true}
-              />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Select date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={(date) => date < new Date()}
-                  />
-                </PopoverContent>
-              </Popover>
-              <Button onClick={handleQuickSearch} className="w-full" disabled={!selectedLocation || !selectedDate}>
-                <Search className="h-4 w-4 mr-2" />
-                Get Climate Outlook
-              </Button>
-            </div>
-          </Card>
-
           {/* Chat Interface */}
           <Card className="w-full flex flex-col h-[500px] shadow-2xl animate-fade-in">
             {/* Messages */}
@@ -226,6 +191,41 @@ const Index = () => {
               <p className="text-xs text-muted-foreground mt-2 text-center">
                 Try: "What's the weather outlook for Miami next month?"
               </p>
+            </div>
+          </Card>
+
+          {/* Manual Search Card */}
+          <Card className="w-full p-6 shadow-lg animate-fade-in">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Manual Search
+            </h3>
+            <div className="space-y-4">
+              <LocationPicker
+                value={selectedLocation || undefined}
+                onChange={setSelectedLocation}
+                searchEnabled={true}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => date < new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button onClick={handleQuickSearch} className="w-full" disabled={!selectedLocation || !selectedDate}>
+                <Search className="h-4 w-4 mr-2" />
+                Get Climate Outlook
+              </Button>
             </div>
           </Card>
         </div>
