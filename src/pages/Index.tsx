@@ -143,7 +143,7 @@ const Index = () => {
           </div>
 
           {/* Chat Interface */}
-          <Card className="w-full flex flex-col h-[500px] shadow-2xl animate-fade-in">
+          <Card className="w-full flex flex-col h-[350px] shadow-2xl animate-fade-in">
             {/* Messages */}
             <ScrollArea className="flex-1 p-6">
               <div className="space-y-4">
