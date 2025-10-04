@@ -46,6 +46,10 @@ const Index = () => {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [windowDays, setWindowDays] = useState(15);
   const [units, setUnits] = useState("metric");
+  
+  // Calculate max date (1 year from today)
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
 
   const performSearch = (location: { lat: number; lon: number }, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
@@ -271,10 +275,13 @@ const Index = () => {
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
-                    disabled={(date) => date < new Date()}
+                    disabled={(date) => date < new Date() || date > maxDate}
                   />
                 </PopoverContent>
               </Popover>
+              <p className="text-xs text-muted-foreground">
+                Forecast limited to 1 year ahead (SARIMAX model constraint)
+              </p>
               
               {/* Advanced Settings */}
               <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
