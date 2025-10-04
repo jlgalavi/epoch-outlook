@@ -4,18 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Search, Calendar, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Loader2, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { AnimatedCharacter } from "@/components/AnimatedCharacter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { LocationPicker } from "@/components/LocationPicker";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { format } from "date-fns";
 
 interface Message {
   role: "user" | "assistant";
@@ -46,6 +43,9 @@ const Index = () => {
   // Search state
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedDay, setSelectedDay] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [windowDays, setWindowDays] = useState(15);
   const [units, setUnits] = useState("metric");
@@ -54,8 +54,45 @@ const Index = () => {
   const maxDate = new Date();
   maxDate.setFullYear(maxDate.getFullYear() + 1);
 
+  // Generate years array (current year to next year)
+  const currentYear = new Date().getFullYear();
+  const years = [currentYear, currentYear + 1];
+  
+  // Months array
+  const months = [
+    { value: "0", label: "January" },
+    { value: "1", label: "February" },
+    { value: "2", label: "March" },
+    { value: "3", label: "April" },
+    { value: "4", label: "May" },
+    { value: "5", label: "June" },
+    { value: "6", label: "July" },
+    { value: "7", label: "August" },
+    { value: "8", label: "September" },
+    { value: "9", label: "October" },
+    { value: "10", label: "November" },
+    { value: "11", label: "December" },
+  ];
+
+  // Update selectedDate when individual selectors change
+  useEffect(() => {
+    if (selectedMonth && selectedDay && selectedYear) {
+      const date = new Date(parseInt(selectedYear), parseInt(selectedMonth), parseInt(selectedDay));
+      setSelectedDate(date);
+    }
+  }, [selectedMonth, selectedDay, selectedYear]);
+
+  // Get days in selected month
+  const getDaysInMonth = () => {
+    if (!selectedMonth || !selectedYear) return 31;
+    return new Date(parseInt(selectedYear), parseInt(selectedMonth) + 1, 0).getDate();
+  };
+
   const performSearch = (location: { lat: number; lon: number }, date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     navigate(`/results?lat=${location.lat}&lon=${location.lon}&date=${dateStr}&window=${windowDays}&units=${units}`);
   };
 
@@ -110,7 +147,11 @@ const Index = () => {
         
         // If we have a date, populate the manual search
         if (date) {
-          setSelectedDate(new Date(date));
+          const dateObj = new Date(date);
+          setSelectedDate(dateObj);
+          setSelectedMonth(dateObj.getMonth().toString());
+          setSelectedDay(dateObj.getDate().toString());
+          setSelectedYear(dateObj.getFullYear().toString());
         }
         
         // Show a message that the search fields have been populated
@@ -291,22 +332,55 @@ const Index = () => {
                 onChange={setSelectedLocation}
                 searchEnabled={true}
               />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Select date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={(date) => date < new Date() || date > maxDate}
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="month">Month</Label>
+                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger id="month">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {months.map((month) => (
+                        <SelectItem key={month.value} value={month.value}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="day">Day</Label>
+                  <Select value={selectedDay} onValueChange={setSelectedDay}>
+                    <SelectTrigger id="day">
+                      <SelectValue placeholder="Day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: getDaysInMonth() }, (_, i) => i + 1).map((day) => (
+                        <SelectItem key={day} value={day.toString()}>
+                          {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="year">Year</Label>
+                  <Select value={selectedYear} onValueChange={setSelectedYear}>
+                    <SelectTrigger id="year">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground">
                 Forecast limited to 1 year ahead (SARIMAX model constraint)
               </p>
