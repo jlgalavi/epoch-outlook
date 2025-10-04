@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -30,6 +30,7 @@ interface Message {
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const manualSearchRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -118,6 +119,14 @@ const Index = () => {
             content: "I've populated the search fields below with the information you provided. Please review and click 'Get Climate Outlook' when ready!",
           };
           setMessages((prev) => [...prev, followUpMessage]);
+          
+          // Scroll to manual search section
+          setTimeout(() => {
+            manualSearchRef.current?.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            });
+          }, 500);
         }
       }
       
@@ -269,7 +278,7 @@ const Index = () => {
           </Card>
 
           {/* Manual Search Card */}
-          <Card className="w-full p-6 shadow-lg animate-fade-in">
+          <Card ref={manualSearchRef} className="w-full p-6 shadow-lg animate-fade-in">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Search className="h-5 w-5" />
               Manual Search
