@@ -47,9 +47,25 @@ serve(async (req) => {
     
     console.log(`Fetching comprehensive weather data for lat=${lat}, lon=${lon}, date=${date}`);
     
-    // Calculate the corresponding date from the previous year
-    const historicalDate = new Date(targetDate);
+    // Open-Meteo Historical Forecast API has data from 2016-01-01 to current date minus a few days
+    const maxAllowedDate = new Date('2025-10-20'); // API limit
+    const minAllowedDate = new Date('2016-01-01');
+    
+    // Calculate the corresponding date from a previous year that's within the allowed range
+    let historicalDate = new Date(targetDate);
     historicalDate.setFullYear(historicalDate.getFullYear() - 1);
+    
+    // If still out of range, go back more years
+    while (historicalDate > maxAllowedDate) {
+      historicalDate.setFullYear(historicalDate.getFullYear() - 1);
+    }
+    
+    // Make sure we're not before the minimum date
+    if (historicalDate < minAllowedDate) {
+      historicalDate = new Date(minAllowedDate);
+      historicalDate.setMonth(targetDate.getMonth());
+      historicalDate.setDate(targetDate.getDate());
+    }
     
     // Calculate start and end dates for the window
     const startDate = new Date(historicalDate);
@@ -57,8 +73,18 @@ serve(async (req) => {
     const endDate = new Date(historicalDate);
     endDate.setDate(endDate.getDate() + Math.floor(window / 2));
     
+    // Ensure dates are within allowed range
+    if (startDate < minAllowedDate) {
+      startDate.setTime(minAllowedDate.getTime());
+    }
+    if (endDate > maxAllowedDate) {
+      endDate.setTime(maxAllowedDate.getTime());
+    }
+    
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
+    
+    console.log(`Using historical data range: ${startDateStr} to ${endDateStr}`);
     
     // Build Open-Meteo Historical Forecast API URL with comprehensive data
     const apiUrl = new URL('https://historical-forecast-api.open-meteo.com/v1/forecast');
