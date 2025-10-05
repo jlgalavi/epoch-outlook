@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      forecast_cache: {
+        Row: {
+          created_at: string
+          day_window: number
+          id: string
+          lat: number
+          lon: number
+          response: Json
+          target_date: string
+          units: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_window?: number
+          id?: string
+          lat: number
+          lon: number
+          response: Json
+          target_date: string
+          units?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_window?: number
+          id?: string
+          lat?: number
+          lon?: number
+          response?: Json
+          target_date?: string
+          units?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
