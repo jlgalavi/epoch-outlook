@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { RiskCards, RiskLabel } from "@/components/RiskCards";
 import { DetailsTable, SummaryRow } from "@/components/DetailsTable";
 import { DownloadButtons } from "@/components/DownloadButtons";
+import { DailyForecast } from "@/components/DailyForecast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -18,9 +19,13 @@ interface DailyBreakdown {
   date: string;
   tempMin: number;
   tempMax: number;
+  tempDayMean: number;
+  tempNightMean: number;
   precipitation: number;
   windSpeed: number;
   uvIndex: number;
+  cloudCover: number;
+  humidity: number;
 }
 
 interface OutlookResponse {
@@ -43,6 +48,16 @@ interface OutlookResponse {
   }>;
   risk_labels: RiskLabel[];
   dailyBreakdown?: DailyBreakdown[];
+  averages?: {
+    tempMin: number;
+    tempMax: number;
+    tempMean: number;
+    tempDayMean: number;
+    tempNightMean: number;
+    precipitation: number;
+    windSpeed: number;
+    uvIndex: number;
+  };
 }
 
 const Results = () => {
@@ -223,6 +238,7 @@ const Results = () => {
             },
           ],
           dailyBreakdown: forecastData.dailyBreakdown || [],
+          averages: forecastData.averages,
         };
         
         setData(transformedData);
@@ -841,6 +857,17 @@ const Results = () => {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+          </section>
+        )}
+
+        {/* Daily Forecast Horizontal Scroll */}
+        {data.dailyBreakdown && data.dailyBreakdown.length > 0 && data.averages && (
+          <section className="animate-fade-in">
+            <DailyForecast 
+              dailyData={data.dailyBreakdown} 
+              averages={data.averages}
+              units={units}
+            />
           </section>
         )}
 

@@ -290,10 +290,24 @@ serve(async (req) => {
         date: d.day,
         tempMin: Math.round(d.Tmin * 10) / 10,
         tempMax: Math.round(d.Tmax * 10) / 10,
+        tempDayMean: Math.round(d.sunTmean * 10) / 10,
+        tempNightMean: Math.round(d.nightTmean * 10) / 10,
         precipitation: Math.round(d.precipitation_sum * 10) / 10,
         windSpeed: Math.round(d.wind_speed_10m_mean * 10) / 10,
-        uvIndex: Math.round(d.uv_index_max * 10) / 10
-      }))
+        uvIndex: Math.round(d.uv_index_max * 10) / 10,
+        cloudCover: Math.round(d.cloud_cover_mean),
+        humidity: Math.round(d.relative_humidity_2m_mean)
+      })),
+      averages: {
+        tempMin: Math.round(avgMetrics.Tmin * 10) / 10,
+        tempMax: Math.round(avgMetrics.Tmax * 10) / 10,
+        tempMean: Math.round(avgMetrics.Tmean * 10) / 10,
+        tempDayMean: Math.round(avgMetrics.sunTmean * 10) / 10,
+        tempNightMean: Math.round(avgMetrics.nightTmean * 10) / 10,
+        precipitation: Math.round(avgMetrics.precipitation * 10) / 10,
+        windSpeed: Math.round(avgMetrics.windSpeed * 10) / 10,
+        uvIndex: Math.round(avgMetrics.uvIndex * 10) / 10
+      }
     };
     
     return new Response(
