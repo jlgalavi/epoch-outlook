@@ -11,8 +11,17 @@ import { AlertCircle, ArrowLeft, ChevronDown, ChevronUp, Cloud, Sun } from "luci
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import maplibregl from "maplibre-gl";
 import { useRef } from "react";
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+
+interface DailyBreakdown {
+  date: string;
+  tempMin: number;
+  tempMax: number;
+  precipitation: number;
+  windSpeed: number;
+  uvIndex: number;
+}
 
 interface OutlookResponse {
   metadata: {
@@ -33,6 +42,7 @@ interface OutlookResponse {
     probability_percent: number;
   }>;
   risk_labels: RiskLabel[];
+  dailyBreakdown?: DailyBreakdown[];
 }
 
 const Results = () => {
@@ -212,6 +222,7 @@ const Results = () => {
               rule_applied: `Humidity and heat index assessment. Temperature: ${forecastData.forecast.temperature.mean.toFixed(1)}°C, Expected precipitation: ${forecastData.forecast.precipitation.amount.toFixed(1)}mm`,
             },
           ],
+          dailyBreakdown: forecastData.dailyBreakdown || [],
         };
         
         setData(transformedData);
@@ -552,6 +563,100 @@ const Results = () => {
             </CardContent>
           </Card>
         </section>
+
+        {/* Daily Charts Section */}
+        {data.dailyBreakdown && data.dailyBreakdown.length > 0 && (
+          <section className="grid md:grid-cols-2 gap-6 animate-fade-in">
+            {/* Daily Temperature Chart */}
+            <Card className="border-2 border-white/40 bg-white/50 backdrop-blur-md rounded-2xl overflow-hidden">
+              <CardContent className="pt-6">
+                <h3 className="text-xl font-bold mb-4">Daily Temperature Forecast</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={data.dailyBreakdown}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+                    <XAxis 
+                      dataKey="date" 
+                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      fontSize={12}
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis 
+                      fontSize={12}
+                      stroke="hsl(var(--muted-foreground))"
+                      label={{ value: '°C', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      formatter={(value: number) => [`${value.toFixed(1)}°C`, '']}
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                        border: '1px solid rgba(0,0,0,0.1)',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="tempMax" 
+                      stroke="#ef4444" 
+                      strokeWidth={3}
+                      name="Max Temp" 
+                      dot={{ fill: '#ef4444', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="tempMin" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      name="Min Temp" 
+                      dot={{ fill: '#3b82f6', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Daily Precipitation Chart */}
+            <Card className="border-2 border-white/40 bg-white/50 backdrop-blur-md rounded-2xl overflow-hidden">
+              <CardContent className="pt-6">
+                <h3 className="text-xl font-bold mb-4">Daily Precipitation Forecast</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={data.dailyBreakdown}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+                    <XAxis 
+                      dataKey="date" 
+                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      fontSize={12}
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis 
+                      fontSize={12}
+                      stroke="hsl(var(--muted-foreground))"
+                      label={{ value: 'mm', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      formatter={(value: number) => [`${value.toFixed(1)} mm`, 'Precipitation']}
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                        border: '1px solid rgba(0,0,0,0.1)',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar 
+                      dataKey="precipitation" 
+                      fill="#3b82f6" 
+                      name="Precipitation (mm)"
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         {/* Other Risks - Show all secondary risks */}
         {otherRisks.length > 0 && (
