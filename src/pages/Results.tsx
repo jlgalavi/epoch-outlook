@@ -504,24 +504,39 @@ const Results = () => {
               
               <div className="grid grid-cols-3 gap-6 mb-6">
                 <div className="text-center">
-                  <div className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Low</div>
-                  <div className="text-5xl font-black text-blue-600 mb-1">
+                  <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ 
+                    color: tMinData && tMinData.p50 < 5 ? '#2563eb' : tMinData && tMinData.p50 < 15 ? '#0891b2' : '#10b981'
+                  }}>Low</div>
+                  <div className="text-5xl font-black mb-1" style={{ 
+                    color: tMinData && tMinData.p50 < 5 ? '#2563eb' : tMinData && tMinData.p50 < 15 ? '#0891b2' : '#10b981'
+                  }}>
                     {tMinData?.p50.toFixed(0)}°
                   </div>
-                  <div className="h-2 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-16 mx-auto" />
+                  <div className={`h-2 rounded-full w-16 mx-auto ${
+                    tMinData && tMinData.p50 < 5 ? 'bg-gradient-to-r from-blue-600 to-blue-400' : 
+                    tMinData && tMinData.p50 < 15 ? 'bg-gradient-to-r from-cyan-600 to-cyan-400' : 
+                    'bg-gradient-to-r from-green-600 to-green-400'
+                  }`} />
                 </div>
                 
                 <div className="text-center">
                   <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ 
-                    color: tempData && tempData.p50 > 30 ? '#f97316' : '#f59e0b'
+                    color: tempData && tempData.p50 < 15 ? '#0891b2' : 
+                           tempData && tempData.p50 < 25 ? '#10b981' : 
+                           tempData && tempData.p50 < 30 ? '#f59e0b' : '#f97316'
                   }}>Avg</div>
                   <div className="text-5xl font-black mb-1" style={{ 
-                    color: tempData && tempData.p50 > 30 ? '#f97316' : '#f59e0b'
+                    color: tempData && tempData.p50 < 15 ? '#0891b2' : 
+                           tempData && tempData.p50 < 25 ? '#10b981' : 
+                           tempData && tempData.p50 < 30 ? '#f59e0b' : '#f97316'
                   }}>
                     {tempData?.p50.toFixed(0)}°
                   </div>
                   <div className={`h-2 rounded-full w-16 mx-auto ${
-                    tempData && tempData.p50 > 30 ? 'bg-gradient-to-r from-orange-600 to-orange-400' : 'bg-gradient-to-r from-yellow-600 to-yellow-400'
+                    tempData && tempData.p50 < 15 ? 'bg-gradient-to-r from-cyan-600 to-cyan-400' :
+                    tempData && tempData.p50 < 25 ? 'bg-gradient-to-r from-green-600 to-green-400' :
+                    tempData && tempData.p50 < 30 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
+                    'bg-gradient-to-r from-orange-600 to-orange-400'
                   }`} />
                 </div>
                 
