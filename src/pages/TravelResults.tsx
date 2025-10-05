@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Navigation, MapPin, Calendar as CalendarIcon, Loader2, ArrowDown, Home } from "lucide-react";
+import { Navigation, MapPin, Calendar as CalendarIcon, Loader2, ArrowDown, Home, AlertTriangle } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -16,11 +17,22 @@ interface Waypoint {
   date?: Date;
 }
 
+interface DailyBreakdown {
+  date: string;
+  tempMin: number;
+  tempMax: number;
+  precipitation: number;
+  windSpeed: number;
+  uvIndex: number;
+}
+
 interface ClimateData {
   temperature: {
     mean: number;
     min: number;
     max: number;
+    daytime: number;
+    nighttime: number;
     unit: string;
   };
   precipitation: {
@@ -32,10 +44,16 @@ interface ClimateData {
     speed: number;
     unit: string;
   };
+  atmosphere: {
+    humidity: number;
+    cloudCover: number;
+    uvIndex: number;
+  };
   summary: {
     outlook: string;
     precipitationRisk: string;
   };
+  dailyBreakdown: DailyBreakdown[];
 }
 
 const TravelResults = () => {
@@ -99,7 +117,9 @@ const TravelResults = () => {
               temperature: forecastData.forecast.temperature,
               precipitation: forecastData.forecast.precipitation,
               wind: forecastData.forecast.wind,
+              atmosphere: forecastData.forecast.atmosphere,
               summary: forecastData.summary,
+              dailyBreakdown: forecastData.dailyBreakdown || [],
             };
           }
         } catch (error) {
@@ -414,62 +434,131 @@ const TravelResults = () => {
                       </div>
 
                       {waypoint.date && (
-                        <div className="p-4 bg-white/50 rounded-lg border border-white/60">
-                          {loading ? (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              <span>Loading climate data...</span>
-                            </div>
-                          ) : climateData[waypoint.id] ? (
-                            <div className="space-y-3">
-                              <div>
-                                <h4 className="font-semibold text-sm mb-2">Weather Outlook</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {climateData[waypoint.id].summary.outlook}
-                                </p>
+                        <div className="space-y-4">
+                          <div className="p-4 bg-white/50 rounded-lg border border-white/60">
+                            {loading ? (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Loading climate data...</span>
+                              </div>
+                            ) : climateData[waypoint.id] ? (
+                              <div className="space-y-4">
+                                <div>
+                                  <h4 className="font-semibold text-sm mb-2">Weather Outlook</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {climateData[waypoint.id].summary.outlook}
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Day Temperature</p>
+                                    <p className="font-semibold">
+                                      {climateData[waypoint.id].temperature.daytime.toFixed(1)}
+                                      {climateData[waypoint.id].temperature.unit}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Night Temperature</p>
+                                    <p className="font-semibold">
+                                      {climateData[waypoint.id].temperature.nighttime.toFixed(1)}
+                                      {climateData[waypoint.id].temperature.unit}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Min - Max</p>
+                                    <p className="font-semibold">
+                                      {climateData[waypoint.id].temperature.min.toFixed(1)} - {climateData[waypoint.id].temperature.max.toFixed(1)}
+                                      {climateData[waypoint.id].temperature.unit}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Precipitation</p>
+                                    <p className="font-semibold">
+                                      {climateData[waypoint.id].precipitation.probability}%
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {climateData[waypoint.id].precipitation.amount.toFixed(1)} {climateData[waypoint.id].precipitation.unit}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Wind Speed</p>
+                                    <p className="font-semibold">
+                                      {climateData[waypoint.id].wind.speed.toFixed(1)} {climateData[waypoint.id].wind.unit}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">UV Index</p>
+                                    <p className="font-semibold">
+                                      {climateData[waypoint.id].atmosphere.uvIndex.toFixed(1)}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {climateData[waypoint.id].atmosphere.uvIndex > 7 && (
+                                  <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded text-xs text-orange-900 dark:text-orange-100 flex items-center gap-2">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <span>High UV radiation - use sun protection!</span>
+                                  </div>
+                                )}
+
+                                {climateData[waypoint.id].precipitation.probability > 50 && (
+                                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded text-xs text-blue-900 dark:text-blue-100">
+                                    ⚠️ High chance of rain - pack an umbrella!
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">
+                                No climate data available for this location
+                              </p>
+                            )}
+                          </div>
+
+                          {!loading && climateData[waypoint.id]?.dailyBreakdown && climateData[waypoint.id].dailyBreakdown.length > 0 && (
+                            <>
+                              <div className="p-4 bg-white/50 rounded-lg border border-white/60">
+                                <h4 className="font-semibold text-sm mb-3">Daily Temperature Forecast</h4>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <LineChart data={climateData[waypoint.id].dailyBreakdown}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis 
+                                      dataKey="date" 
+                                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                      fontSize={12}
+                                    />
+                                    <YAxis fontSize={12} />
+                                    <Tooltip 
+                                      labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                      formatter={(value: number) => [`${value.toFixed(1)}°C`, '']}
+                                    />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="tempMax" stroke="#f87171" name="Max Temp" strokeWidth={2} />
+                                    <Line type="monotone" dataKey="tempMin" stroke="#60a5fa" name="Min Temp" strokeWidth={2} />
+                                  </LineChart>
+                                </ResponsiveContainer>
                               </div>
 
-                              <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Temperature</p>
-                                  <p className="font-semibold">
-                                    {climateData[waypoint.id].temperature.mean.toFixed(1)}
-                                    {climateData[waypoint.id].temperature.unit}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {climateData[waypoint.id].temperature.min.toFixed(0)} - {climateData[waypoint.id].temperature.max.toFixed(0)}
-                                    {climateData[waypoint.id].temperature.unit}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Precipitation</p>
-                                  <p className="font-semibold">
-                                    {climateData[waypoint.id].precipitation.probability}%
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {climateData[waypoint.id].precipitation.amount.toFixed(1)} {climateData[waypoint.id].precipitation.unit}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Wind</p>
-                                  <p className="font-semibold">
-                                    {climateData[waypoint.id].wind.speed.toFixed(1)} {climateData[waypoint.id].wind.unit}
-                                  </p>
-                                </div>
+                              <div className="p-4 bg-white/50 rounded-lg border border-white/60">
+                                <h4 className="font-semibold text-sm mb-3">Daily Precipitation Forecast</h4>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <BarChart data={climateData[waypoint.id].dailyBreakdown}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis 
+                                      dataKey="date" 
+                                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                      fontSize={12}
+                                    />
+                                    <YAxis fontSize={12} />
+                                    <Tooltip 
+                                      labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                      formatter={(value: number) => [`${value.toFixed(1)} mm`, 'Precipitation']}
+                                    />
+                                    <Bar dataKey="precipitation" fill="#3b82f6" name="Precipitation (mm)" />
+                                  </BarChart>
+                                </ResponsiveContainer>
                               </div>
-
-                              {climateData[waypoint.id].precipitation.probability > 50 && (
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded text-xs text-blue-900 dark:text-blue-100">
-                                  ⚠️ High chance of rain - pack an umbrella!
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              No climate data available for this location
-                            </p>
+                            </>
                           )}
                         </div>
                       )}
