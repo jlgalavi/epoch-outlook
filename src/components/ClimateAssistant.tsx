@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,14 @@ export const ClimateAssistant = ({ climateData }: ClimateAssistantProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { isRecording, isTranscribing, startRecording, stopRecording } = useVoiceRecorder();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll only when loading completes
+  useEffect(() => {
+    if (!isLoading && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading]);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -145,6 +153,7 @@ export const ClimateAssistant = ({ climateData }: ClimateAssistantProps) => {
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
 

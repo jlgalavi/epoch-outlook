@@ -226,8 +226,11 @@ const Index = () => {
     }
   }, [isLoading]);
 
+  // Auto-scroll only when loading completes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!isLoading && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isLoading]);
 
   return (
