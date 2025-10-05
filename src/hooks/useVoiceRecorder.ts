@@ -65,9 +65,15 @@ export const useVoiceRecorder = () => {
 
             setIsTranscribing(false);
 
-            if (error) throw error;
+            if (error) {
+              console.error('Transcription error:', error);
+              throw error;
+            }
 
-            resolve(data.text);
+            console.log('Transcription result:', data);
+            const transcribedText = data?.text || '';
+            console.log('Transcribed text:', transcribedText);
+            resolve(transcribedText);
           };
         } catch (error) {
           setIsTranscribing(false);
