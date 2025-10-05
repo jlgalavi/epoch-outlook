@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Search, ChevronDown, Cloud, Sun, CloudRain } from "lucide-react";
+import { Send, Loader2, Search, ChevronDown, Cloud, Sun, CloudRain, Mic } from "lucide-react";
 import { AnimatedCharacter } from "@/components/AnimatedCharacter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,7 @@ import { LocationPicker } from "@/components/LocationPicker";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
 interface Message {
   role: "user" | "assistant";
@@ -28,6 +29,7 @@ const Index = () => {
   const { toast } = useToast();
   const manualSearchRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { isRecording, isTranscribing, startRecording, stopRecording } = useVoiceRecorder();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -191,6 +193,19 @@ const Index = () => {
     }
   };
 
+  const handleVoiceInput = async () => {
+    if (isRecording) {
+      try {
+        const transcribedText = await stopRecording();
+        setInput(transcribedText);
+      } catch (error) {
+        console.error('Error stopping recording:', error);
+      }
+    } else {
+      startRecording();
+    }
+  };
+
   const handleQuickSearch = () => {
     if (selectedLocation && selectedDate) {
       performSearch(selectedLocation, selectedDate);
@@ -267,7 +282,17 @@ const Index = () => {
                     onFocus={() => setIsChatExpanded(true)}
                     placeholder="Ask Clima about climate data... (click to expand)"
                     className="text-base"
+                    disabled={isRecording || isTranscribing}
                   />
+                  <Button
+                    onClick={handleVoiceInput}
+                    disabled={isTranscribing}
+                    size="icon"
+                    variant={isRecording ? "destructive" : "outline"}
+                    className="shrink-0"
+                  >
+                    <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
+                  </Button>
                   <Button onClick={() => setIsChatExpanded(true)} size="icon" className="shrink-0">
                     <Send className="h-4 w-4" />
                   </Button>
@@ -314,9 +339,18 @@ const Index = () => {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask me about climate data, locations, or trends..."
-                      disabled={isLoading}
+                      disabled={isLoading || isRecording || isTranscribing}
                       className="text-base"
                     />
+                    <Button
+                      onClick={handleVoiceInput}
+                      disabled={isLoading || isTranscribing}
+                      size="icon"
+                      variant={isRecording ? "destructive" : "outline"}
+                      className="shrink-0"
+                    >
+                      <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
+                    </Button>
                     <Button onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon" className="shrink-0">
                       <Send className="h-4 w-4" />
                     </Button>

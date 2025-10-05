@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Mic } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
 interface Message {
   role: "user" | "assistant";
@@ -27,6 +28,7 @@ export const ClimateAssistant = ({ climateData }: ClimateAssistantProps) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { isRecording, isTranscribing, startRecording, stopRecording } = useVoiceRecorder();
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -64,6 +66,19 @@ export const ClimateAssistant = ({ climateData }: ClimateAssistantProps) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  };
+
+  const handleVoiceInput = async () => {
+    if (isRecording) {
+      try {
+        const transcribedText = await stopRecording();
+        setInput(transcribedText);
+      } catch (error) {
+        console.error('Error stopping recording:', error);
+      }
+    } else {
+      startRecording();
     }
   };
 
@@ -141,8 +156,16 @@ export const ClimateAssistant = ({ climateData }: ClimateAssistantProps) => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask Clima anything..."
-                disabled={isLoading}
+                disabled={isLoading || isRecording || isTranscribing}
               />
+              <Button
+                onClick={handleVoiceInput}
+                disabled={isLoading || isTranscribing}
+                size="icon"
+                variant={isRecording ? "destructive" : "outline"}
+              >
+                <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
+              </Button>
               <Button onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon">
                 <Send className="h-4 w-4" />
               </Button>
