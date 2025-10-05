@@ -11,19 +11,37 @@ export const useVoiceRecorder = () => {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          channelCount: 1,
+          sampleRate: 48000,
+          echoCancellation: true,
+          noiseSuppression: true,
+        }
+      });
+      
+      // Check if the browser supports the desired format
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus' 
+        : 'audio/webm';
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
+
+      console.log('Recording with format:', mimeType);
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
+          console.log('Audio chunk received:', e.data.size, 'bytes');
         }
       };
 
       mediaRecorder.start();
       setIsRecording(true);
+      
+      console.log('Recording started successfully');
     } catch (error) {
       console.error('Error accessing microphone:', error);
       toast({
@@ -48,6 +66,9 @@ export const useVoiceRecorder = () => {
         try {
           const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
           
+          console.log('Audio blob size:', audioBlob.size, 'bytes');
+          console.log('Audio blob type:', audioBlob.type);
+          
           // Convert blob to base64
           const reader = new FileReader();
           reader.readAsDataURL(audioBlob);
@@ -57,6 +78,8 @@ export const useVoiceRecorder = () => {
             if (!base64Audio) {
               throw new Error('Failed to convert audio to base64');
             }
+
+            console.log('Sending audio to transcription service...');
 
             // Send to transcription service
             const { data, error } = await supabase.functions.invoke('voice-to-text', {
@@ -73,6 +96,14 @@ export const useVoiceRecorder = () => {
             console.log('Transcription result:', data);
             const transcribedText = data?.text || '';
             console.log('Transcribed text:', transcribedText);
+            
+            if (!transcribedText) {
+              toast({
+                title: 'No speech detected',
+                description: 'Please try speaking more clearly and closer to the microphone.',
+              });
+            }
+            
             resolve(transcribedText);
           };
         } catch (error) {
