@@ -192,11 +192,11 @@ const Results = () => {
           ],
           risk_labels: [
             {
-              risk_type: forecastData.forecast.temperature.mean > 32 ? 'very_hot' : 
-                         forecastData.forecast.temperature.mean < 3 ? 'very_cold' : 
+              risk_type: forecastData.forecast.temperature.mean > 35 ? 'very_hot' : 
+                         forecastData.forecast.temperature.mean < 0 ? 'very_cold' : 
                          'very_uncomfortable',
-              level: (forecastData.forecast.temperature.mean > 35 || forecastData.forecast.temperature.mean < 0 ? 'high' : 
-                     forecastData.forecast.temperature.mean > 30 || forecastData.forecast.temperature.mean < 5 ? 'medium' : 'low') as 'low' | 'medium' | 'high',
+              level: (forecastData.forecast.temperature.mean > 38 || forecastData.forecast.temperature.mean < -5 ? 'high' : 
+                     forecastData.forecast.temperature.mean > 33 || forecastData.forecast.temperature.mean < 2 ? 'medium' : 'low') as 'low' | 'medium' | 'high',
               probability_percent: Math.min(95, Math.max(60, forecastData.forecast.temperature.confidence * 100)),
               rule_applied: `${forecastData.summary.reliability}. Model: ${forecastData.metadata.model}`,
             },
@@ -476,13 +476,25 @@ const Results = () => {
 
         {/* Weather Forecast Cards */}
         <section className="grid md:grid-cols-2 gap-6 animate-fade-in">
-          {/* Temperature Card - Redesigned */}
-          <Card className="relative overflow-hidden border-3 border-white/50 bg-gradient-to-br from-orange-50/80 to-red-50/80 backdrop-blur-md hover:shadow-2xl transition-all rounded-3xl">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500" />
+          {/* Temperature Card - Redesigned with dynamic colors */}
+          <Card className={`relative overflow-hidden border-3 border-white/50 backdrop-blur-md hover:shadow-2xl transition-all rounded-3xl ${
+            tempData && tempData.p50 > 33 ? 'bg-gradient-to-br from-red-50/80 to-orange-50/80' :
+            tempData && tempData.p50 < 5 ? 'bg-gradient-to-br from-blue-50/80 to-cyan-50/80' :
+            'bg-gradient-to-br from-yellow-50/80 to-orange-50/80'
+          }`}>
+            <div className={`absolute top-0 left-0 right-0 h-1.5 ${
+              tempData && tempData.p50 > 33 ? 'bg-gradient-to-r from-orange-500 via-red-500 to-red-600' :
+              tempData && tempData.p50 < 5 ? 'bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-400' :
+              'bg-gradient-to-r from-green-500 via-yellow-400 to-orange-400'
+            }`} />
             <CardContent className="pt-8 pb-6 px-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-bold text-foreground">Temperature Forecast</h3>
-                <div className="p-3 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl shadow-lg">
+                <div className={`p-3 rounded-2xl shadow-lg ${
+                  tempData && tempData.p50 > 33 ? 'bg-gradient-to-br from-red-500 to-orange-600' :
+                  tempData && tempData.p50 < 5 ? 'bg-gradient-to-br from-blue-500 to-cyan-600' :
+                  'bg-gradient-to-br from-yellow-500 to-orange-500'
+                }`}>
                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10 2a1 1 0 011 1v6.268l2.121 2.121a1 1 0 01-1.414 1.414L9 10.414V3a1 1 0 011-1z"/>
                     <path d="M13.95 13.536a5 5 0 10-7.9 0A3.5 3.5 0 0010 20a3.5 3.5 0 003.95-6.464z"/>
@@ -500,19 +512,31 @@ const Results = () => {
                 </div>
                 
                 <div className="text-center">
-                  <div className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-2">Avg</div>
-                  <div className="text-5xl font-black text-orange-600 mb-1">
+                  <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ 
+                    color: tempData && tempData.p50 > 30 ? '#f97316' : '#f59e0b'
+                  }}>Avg</div>
+                  <div className="text-5xl font-black mb-1" style={{ 
+                    color: tempData && tempData.p50 > 30 ? '#f97316' : '#f59e0b'
+                  }}>
                     {tempData?.p50.toFixed(0)}°
                   </div>
-                  <div className="h-2 bg-gradient-to-r from-orange-600 to-orange-400 rounded-full w-16 mx-auto" />
+                  <div className={`h-2 rounded-full w-16 mx-auto ${
+                    tempData && tempData.p50 > 30 ? 'bg-gradient-to-r from-orange-600 to-orange-400' : 'bg-gradient-to-r from-yellow-600 to-yellow-400'
+                  }`} />
                 </div>
                 
                 <div className="text-center">
-                  <div className="text-xs font-bold text-red-600 uppercase tracking-wider mb-2">High</div>
-                  <div className="text-5xl font-black text-red-600 mb-1">
+                  <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ 
+                    color: tMaxData && tMaxData.p50 > 33 ? '#dc2626' : '#f97316'
+                  }}>High</div>
+                  <div className="text-5xl font-black mb-1" style={{ 
+                    color: tMaxData && tMaxData.p50 > 33 ? '#dc2626' : '#f97316'
+                  }}>
                     {tMaxData?.p50.toFixed(0)}°
                   </div>
-                  <div className="h-2 bg-gradient-to-r from-red-600 to-red-400 rounded-full w-16 mx-auto" />
+                  <div className={`h-2 rounded-full w-16 mx-auto ${
+                    tMaxData && tMaxData.p50 > 33 ? 'bg-gradient-to-r from-red-600 to-red-400' : 'bg-gradient-to-r from-orange-600 to-orange-400'
+                  }`} />
                 </div>
               </div>
               
