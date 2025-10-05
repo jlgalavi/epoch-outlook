@@ -22,6 +22,8 @@ interface Waypoint {
 const TravelPlanner = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Route planning state
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [currentName, setCurrentName] = useState("");
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lon: number } | null>(null);
