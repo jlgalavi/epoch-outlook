@@ -3,10 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Loader2, Mic } from "lucide-react";
+import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
 interface Message {
   role: "user" | "assistant";
@@ -28,7 +27,6 @@ export const ClimateAssistant = ({ climateData }: ClimateAssistantProps) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { isRecording, isTranscribing, startRecording, stopRecording } = useVoiceRecorder();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll only when loading completes
@@ -77,18 +75,6 @@ export const ClimateAssistant = ({ climateData }: ClimateAssistantProps) => {
     }
   };
 
-  const handleVoiceInput = async () => {
-    if (isRecording) {
-      try {
-        const transcribedText = await stopRecording();
-        setInput(transcribedText);
-      } catch (error) {
-        console.error('Error stopping recording:', error);
-      }
-    } else {
-      startRecording();
-    }
-  };
 
   return (
     <>
@@ -159,38 +145,14 @@ export const ClimateAssistant = ({ climateData }: ClimateAssistantProps) => {
 
           {/* Input */}
           <div className="p-4 border-t">
-            {isRecording && (
-              <div className="mb-2 flex items-center gap-2 bg-destructive/10 text-destructive px-3 py-2 rounded-lg animate-fade-in">
-                <div className="flex gap-1">
-                  <div className="w-1 h-4 bg-destructive rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-1 h-4 bg-destructive rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-1 h-4 bg-destructive rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
-                </div>
-                <span className="text-sm font-medium">Recording audio...</span>
-              </div>
-            )}
-            {isTranscribing && (
-              <div className="mb-2 flex items-center gap-2 bg-primary/10 text-primary px-3 py-2 rounded-lg animate-fade-in">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm font-medium">Transcribing your audio...</span>
-              </div>
-            )}
             <div className="flex gap-2">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask Clima anything..."
-                disabled={isLoading || isRecording || isTranscribing}
+                disabled={isLoading}
               />
-              <Button
-                onClick={handleVoiceInput}
-                disabled={isLoading || isTranscribing}
-                size="icon"
-                variant={isRecording ? "destructive" : "outline"}
-              >
-                <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
-              </Button>
               <Button onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon">
                 <Send className="h-4 w-4" />
               </Button>
