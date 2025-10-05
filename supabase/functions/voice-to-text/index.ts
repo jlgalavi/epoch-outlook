@@ -6,34 +6,75 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Process base64 in chunks to prevent memory issues
-function processBase64Chunks(base64String: string, chunkSize = 32768) {
-  const chunks: Uint8Array[] = [];
-  let position = 0;
+// Generate OAuth2 token from service account credentials
+async function getAccessToken(credentials: any) {
+  const header = {
+    alg: "RS256",
+    typ: "JWT",
+  };
+
+  const now = Math.floor(Date.now() / 1000);
+  const claim = {
+    iss: credentials.client_email,
+    scope: "https://www.googleapis.com/auth/cloud-platform",
+    aud: credentials.token_uri,
+    exp: now + 3600,
+    iat: now,
+  };
+
+  const encoder = new TextEncoder();
+  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const claimB64 = btoa(JSON.stringify(claim)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const signatureInput = `${headerB64}.${claimB64}`;
+
+  // Import private key
+  const pemKey = credentials.private_key;
+  const pemContents = pemKey.replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\n/g, '');
   
-  while (position < base64String.length) {
-    const chunk = base64String.slice(position, position + chunkSize);
-    const binaryChunk = atob(chunk);
-    const bytes = new Uint8Array(binaryChunk.length);
-    
-    for (let i = 0; i < binaryChunk.length; i++) {
-      bytes[i] = binaryChunk.charCodeAt(i);
-    }
-    
-    chunks.push(bytes);
-    position += chunkSize;
+  const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8',
+    binaryKey,
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256',
+    },
+    false,
+    ['sign']
+  );
+
+  // Sign the JWT
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    cryptoKey,
+    encoder.encode(signatureInput)
+  );
+
+  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  
+  const jwt = `${signatureInput}.${signatureB64}`;
+
+  // Exchange JWT for access token
+  const tokenResponse = await fetch(credentials.token_uri, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+  });
+
+  if (!tokenResponse.ok) {
+    const errorText = await tokenResponse.text();
+    console.error('Token exchange error:', tokenResponse.status, errorText);
+    throw new Error(`Failed to get access token: ${errorText}`);
   }
 
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return result;
+  const tokenData = await tokenResponse.json();
+  return tokenData.access_token;
 }
 
 serve(async (req) => {
@@ -48,37 +89,59 @@ serve(async (req) => {
       throw new Error('No audio data provided');
     }
 
-    console.log('Processing audio transcription request');
+    console.log('Processing audio transcription request with Google Cloud Speech-to-Text');
 
-    // Process audio in chunks
-    const binaryAudio = processBase64Chunks(audio);
+    // Get Google Cloud credentials
+    const credentialsJson = Deno.env.get('GOOGLE_CLOUD_CREDENTIALS');
+    if (!credentialsJson) {
+      throw new Error('GOOGLE_CLOUD_CREDENTIALS not configured');
+    }
+
+    const credentials = JSON.parse(credentialsJson);
     
-    // Prepare form data
-    const formData = new FormData();
-    const blob = new Blob([binaryAudio], { type: 'audio/webm' });
-    formData.append('file', blob, 'audio.webm');
-    formData.append('model', 'whisper-1');
+    // Get access token
+    const accessToken = await getAccessToken(credentials);
+    console.log('Successfully obtained access token');
 
-    // Send to OpenAI
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-      },
-      body: formData,
-    });
+    // Send to Google Cloud Speech-to-Text
+    const response = await fetch(
+      `https://speech.googleapis.com/v1/speech:recognize`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          config: {
+            encoding: 'WEBM_OPUS',
+            sampleRateHertz: 48000,
+            languageCode: 'en-US',
+            enableAutomaticPunctuation: true,
+          },
+          audio: {
+            content: audio,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${errorText}`);
+      console.error('Google Cloud API error:', response.status, errorText);
+      throw new Error(`Google Cloud API error: ${errorText}`);
     }
 
     const result = await response.json();
     console.log('Transcription successful');
 
+    // Extract transcription text
+    const transcription = result.results
+      ?.map((r: any) => r.alternatives?.[0]?.transcript)
+      .join(' ') || '';
+
     return new Response(
-      JSON.stringify({ text: result.text }),
+      JSON.stringify({ text: transcription }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
