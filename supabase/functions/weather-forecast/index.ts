@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,61 +42,52 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Check cache first (round coordinates to 2 decimals for caching)
-    const cachedLat = Math.round(lat * 100) / 100;
-    const cachedLon = Math.round(lon * 100) / 100;
-    
-    const { data: cached, error: fetchError } = await supabase
-      .from('forecast_cache')
-      .select('*')
-      .eq('lat', cachedLat)
-      .eq('lon', cachedLon)
-      .eq('target_date', date)
-      .eq('day_window', window)
-      .eq('units', units)
-      .maybeSingle();
-
-    if (cached && !fetchError) {
-      console.log('Returning cached forecast');
-      return new Response(
-        JSON.stringify(cached.response),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log('Cache miss, fetching fresh data');
     
     const targetDate = new Date(date);
     
-    console.log(`Fetching weather forecast for lat=${lat}, lon=${lon}, date=${date}, window=${window} days`);
+    console.log(`Fetching comprehensive weather data for lat=${lat}, lon=${lon}, date=${date}`);
     
-    // Calculate start and end dates for the forecast (consecutive days from target date)
-    const startDate = new Date(targetDate);
-    const endDate = new Date(targetDate);
-    endDate.setDate(endDate.getDate() + window - 1);
+    // Open-Meteo Historical Forecast API has data from 2016-01-01 to current date minus a few days
+    const maxAllowedDate = new Date('2025-10-20'); // API limit
+    const minAllowedDate = new Date('2016-01-01');
+    
+    // Calculate the corresponding date from a previous year that's within the allowed range
+    let historicalDate = new Date(targetDate);
+    historicalDate.setFullYear(historicalDate.getFullYear() - 1);
+    
+    // If still out of range, go back more years
+    while (historicalDate > maxAllowedDate) {
+      historicalDate.setFullYear(historicalDate.getFullYear() - 1);
+    }
+    
+    // Make sure we're not before the minimum date
+    if (historicalDate < minAllowedDate) {
+      historicalDate = new Date(minAllowedDate);
+      historicalDate.setMonth(targetDate.getMonth());
+      historicalDate.setDate(targetDate.getDate());
+    }
+    
+    // Calculate start and end dates for the window
+    const startDate = new Date(historicalDate);
+    startDate.setDate(startDate.getDate() - Math.floor(window / 2));
+    const endDate = new Date(historicalDate);
+    endDate.setDate(endDate.getDate() + Math.floor(window / 2));
+    
+    // Ensure dates are within allowed range
+    if (startDate < minAllowedDate) {
+      startDate.setTime(minAllowedDate.getTime());
+    }
+    if (endDate > maxAllowedDate) {
+      endDate.setTime(maxAllowedDate.getTime());
+    }
     
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
     
-    console.log(`Fetching forecast for date range: ${startDateStr} to ${endDateStr}`);
+    console.log(`Using historical data range: ${startDateStr} to ${endDateStr}`);
     
-    // Decide API based on whether the requested range is in the past (archive) or present/future (forecast)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const isArchive = endDate < today;
-    const dataSource = isArchive ? 'Open-Meteo Archive API' : 'Open-Meteo Forecast API';
-
-    // Build Open-Meteo API URL with comprehensive data
-    const apiUrl = new URL(isArchive 
-      ? 'https://archive-api.open-meteo.com/v1/archive' 
-      : 'https://api.open-meteo.com/v1/forecast'
-    );
+    // Build Open-Meteo Historical Forecast API URL with comprehensive data
+    const apiUrl = new URL('https://historical-forecast-api.open-meteo.com/v1/forecast');
     apiUrl.searchParams.set('latitude', lat.toString());
     apiUrl.searchParams.set('longitude', lon.toString());
     apiUrl.searchParams.set('start_date', startDateStr);
@@ -124,7 +114,7 @@ serve(async (req) => {
     apiUrl.searchParams.set('wind_speed_unit', units === 'metric' ? 'kmh' : 'mph');
     apiUrl.searchParams.set('timezone', 'auto');
     
-    console.log(`Calling ${dataSource}: ${apiUrl.toString()}`);
+    console.log(`Calling Open-Meteo Historical Forecast API: ${apiUrl.toString()}`);
     
     // Fetch from Open-Meteo
     const apiResponse = await fetch(apiUrl.toString());
@@ -160,11 +150,9 @@ serve(async (req) => {
       const Tmin = Math.min(...temps);
       const Tmax = Math.max(...temps);
       
-      // Parse sunrise and sunset (fallback to 06:00-18:00 if missing)
-      const sunriseStr = weatherData.daily?.sunrise?.[idx];
-      const sunsetStr = weatherData.daily?.sunset?.[idx];
-      const sunrise = sunriseStr ? new Date(sunriseStr) : new Date(`${dayStr}T06:00:00`);
-      const sunset = sunsetStr ? new Date(sunsetStr) : new Date(`${dayStr}T18:00:00`);
+      // Parse sunrise and sunset
+      const sunrise = new Date(weatherData.daily.sunrise[idx]);
+      const sunset = new Date(weatherData.daily.sunset[idx]);
       
       // Calculate daytime and nighttime average temperatures
       const sunriseHour = sunrise.getHours() + sunrise.getMinutes() / 60;
@@ -260,7 +248,7 @@ serve(async (req) => {
         window: window,
         units: units,
         model: 'Advanced Climate Models',
-        dataSource: dataSource,
+        dataSource: 'Open-Meteo Historical Forecast API',
         generatedAt: new Date().toISOString(),
       },
       forecast: {
@@ -302,39 +290,11 @@ serve(async (req) => {
         date: d.day,
         tempMin: Math.round(d.Tmin * 10) / 10,
         tempMax: Math.round(d.Tmax * 10) / 10,
-        tempDayMean: Math.round(d.sunTmean * 10) / 10,
-        tempNightMean: Math.round(d.nightTmean * 10) / 10,
         precipitation: Math.round(d.precipitation_sum * 10) / 10,
         windSpeed: Math.round(d.wind_speed_10m_mean * 10) / 10,
-        uvIndex: Math.round(d.uv_index_max * 10) / 10,
-        cloudCover: Math.round(d.cloud_cover_mean),
-        humidity: Math.round(d.relative_humidity_2m_mean)
-      })),
-      averages: {
-        tempMin: Math.round(avgMetrics.Tmin * 10) / 10,
-        tempMax: Math.round(avgMetrics.Tmax * 10) / 10,
-        tempMean: Math.round(avgMetrics.Tmean * 10) / 10,
-        tempDayMean: Math.round(avgMetrics.sunTmean * 10) / 10,
-        tempNightMean: Math.round(avgMetrics.nightTmean * 10) / 10,
-        precipitation: Math.round(avgMetrics.precipitation * 10) / 10,
-        windSpeed: Math.round(avgMetrics.windSpeed * 10) / 10,
-        uvIndex: Math.round(avgMetrics.uvIndex * 10) / 10
-      }
+        uvIndex: Math.round(d.uv_index_max * 10) / 10
+      }))
     };
-    
-    // Cache the response
-    await supabase
-      .from('forecast_cache')
-      .upsert({
-        lat: cachedLat,
-        lon: cachedLon,
-        target_date: date,
-        day_window: window,
-        units: units,
-        response: response
-      }, {
-        onConflict: 'lat,lon,target_date,day_window,units'
-      });
     
     return new Response(
       JSON.stringify(response),
