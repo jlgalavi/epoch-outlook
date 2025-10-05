@@ -310,7 +310,7 @@ const Results = () => {
           paint: {
             'circle-radius': 60,
             'circle-color': '#0ea5e9',
-            'circle-opacity': precipChance / 200,
+            'circle-opacity': Math.min(1, precipChance / 100),
             'circle-stroke-width': 2,
             'circle-stroke-color': '#0ea5e9',
             'circle-stroke-opacity': 0.5,
@@ -635,6 +635,26 @@ const Results = () => {
                 </div>
               </div>
               
+              {/* Hot/Cold Probability Indicators */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-gradient-to-br from-red-100/80 to-orange-100/80 rounded-xl p-3 border-2 border-red-200/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-red-700">Very Hot</span>
+                    <span className="text-xl font-black text-red-600">
+                      {Math.min(100, tempData && tempData.p50 > 35 ? 85 : tempData && tempData.p50 > 30 ? 45 : 10)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-blue-100/80 to-cyan-100/80 rounded-xl p-3 border-2 border-blue-200/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-blue-700">Very Cold</span>
+                    <span className="text-xl font-black text-blue-600">
+                      {Math.min(100, tempData && tempData.p50 < 5 ? 75 : tempData && tempData.p50 < 10 ? 35 : 5)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
               <div className="bg-white/70 rounded-2xl p-4 border-2 border-white/80 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/90 group-hover:shadow-lg">
                 <div className="text-sm font-semibold text-muted-foreground text-center">
                   Expected Range: {tMinData?.p50.toFixed(1)}°C - {tMaxData?.p50.toFixed(1)}°C
@@ -688,7 +708,7 @@ const Results = () => {
                     return 'bg-gradient-to-r from-blue-700 to-cyan-700';
                   })()
                 }`}>
-                  {(precipProb?.probability_percent || 0).toFixed(0)}%
+                  {Math.min(100, (precipProb?.probability_percent || 0)).toFixed(0)}%
                 </div>
                 <div className="text-lg font-bold text-muted-foreground uppercase tracking-wider">
                   Chance of Rain

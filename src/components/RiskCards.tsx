@@ -83,11 +83,11 @@ const riskConfig = {
     label: "Very Uncomfortable",
     icon: ThermometerSun,
     colorClass: {
-      low: "bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/30 dark:to-amber-900/20 border-amber-300 dark:border-amber-800",
-      medium: "bg-gradient-to-br from-amber-200 to-amber-100 dark:from-amber-900/50 dark:to-amber-800/30 border-amber-400 dark:border-amber-700",
-      high: "bg-gradient-to-br from-amber-500/90 to-yellow-500/80 dark:from-amber-600/90 dark:to-yellow-600/80 border-amber-600 dark:border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.5)]",
+      low: "bg-gradient-to-br from-purple-100 to-violet-50 dark:from-purple-950/30 dark:to-violet-900/20 border-purple-300 dark:border-purple-800",
+      medium: "bg-gradient-to-br from-purple-200 to-violet-100 dark:from-purple-900/50 dark:to-violet-800/30 border-purple-400 dark:border-purple-700",
+      high: "bg-gradient-to-br from-purple-500/90 to-violet-500/80 dark:from-purple-600/90 dark:to-violet-600/80 border-purple-600 dark:border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.5)]",
     },
-    iconColor: "text-risk-uncomfortable",
+    iconColor: "text-purple-600",
     animation: "animate-pulse",
     emoji: "😓",
     description: "Uncomfortable conditions",
@@ -95,9 +95,9 @@ const riskConfig = {
 };
 
 const levelConfig = {
-  low: { label: "Low", color: "bg-risk-low text-white" },
-  medium: { label: "Medium", color: "bg-risk-medium text-white" },
-  high: { label: "High", color: "bg-risk-high text-white" },
+  low: { label: "Low", color: "bg-emerald-600 text-white font-bold shadow-md" },
+  medium: { label: "Medium", color: "bg-amber-600 text-white font-bold shadow-md" },
+  high: { label: "High", color: "bg-rose-600 text-white font-bold shadow-md" },
 };
 
 export function RiskCards({ data, featured = false }: RiskCardsProps) {
@@ -108,32 +108,34 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
     const Icon = config.icon;
 
     return (
-      <Card className={cn("overflow-hidden border-2 transition-all hover:shadow-2xl", config.colorClass[risk.level])}>
+      <Card className={cn("overflow-hidden border-3 transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] rounded-3xl", config.colorClass[risk.level])}>
         <CardContent className="p-8">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className={cn(
-              "relative p-8 rounded-full",
-              risk.level === "high" ? "bg-white/90 dark:bg-black/50" : "bg-card/50",
+              "relative p-8 rounded-full shadow-xl transition-transform duration-300 hover:scale-110",
+              risk.level === "high" ? "bg-white/95 dark:bg-black/60" : "bg-white/80 dark:bg-card/60",
               config.iconColor
             )}>
               <Icon className={cn("h-20 w-20", config.animation)} />
-              <div className="absolute -top-2 -right-2 text-4xl">{config.emoji}</div>
+              <div className="absolute -top-2 -right-2 text-4xl drop-shadow-lg">{config.emoji}</div>
             </div>
             <div className="flex-1 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                <h2 className="text-3xl font-bold">{config.label}</h2>
-                <Badge className={cn(levelInfo.color, "text-base px-4 py-1 animate-pulse")}>
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
+                <h2 className="text-4xl font-black bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  {config.label}
+                </h2>
+                <Badge className={cn(levelInfo.color, "text-base px-4 py-1.5 animate-pulse shadow-lg")}>
                   {levelInfo.label} Risk
                 </Badge>
               </div>
-              <p className="text-6xl font-bold my-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                {risk.probability_percent.toFixed(1)}%
+              <p className="text-7xl font-black my-5 bg-gradient-to-r from-primary via-primary/80 to-secondary bg-clip-text text-transparent drop-shadow-md">
+                {Math.min(100, risk.probability_percent).toFixed(0)}%
               </p>
-              <p className="text-lg text-muted-foreground mb-4">
+              <p className="text-xl font-semibold text-foreground/80 mb-4">
                 {config.description}
               </p>
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <p className="text-sm text-muted-foreground">
+              <div className="mt-5 pt-5 border-t-2 border-white/30">
+                <p className="text-sm font-medium text-foreground/70 leading-relaxed">
                   {risk.rule_applied}
                 </p>
               </div>
@@ -155,35 +157,37 @@ export function RiskCards({ data, featured = false }: RiskCardsProps) {
           <Card
             key={risk.risk_type}
             className={cn(
-              "group transition-all hover:scale-105 hover:shadow-xl border-2 overflow-hidden",
+              "group transition-all duration-300 hover:scale-105 hover:shadow-2xl border-3 overflow-hidden rounded-2xl",
               config.colorClass[risk.level]
             )}
           >
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between mb-3">
                 <div className={cn(
-                  "relative p-3 rounded-xl",
-                  risk.level === "high" ? "bg-white/90 dark:bg-black/50" : "bg-card/50",
+                  "relative p-3 rounded-xl shadow-lg transition-all duration-300 group-hover:scale-110",
+                  risk.level === "high" ? "bg-white/95 dark:bg-black/60" : "bg-white/80 dark:bg-card/60",
                   config.iconColor
                 )}>
                   <Icon className={cn("h-8 w-8", config.animation)} />
-                  <div className="absolute -top-1 -right-1 text-xl">{config.emoji}</div>
+                  <div className="absolute -top-1 -right-1 text-xl drop-shadow-md">{config.emoji}</div>
                 </div>
-                <Badge className={cn(levelInfo.color, "px-3 py-1")}>
+                <Badge className={cn(levelInfo.color, "px-3 py-1.5 text-sm")}>
                   {levelInfo.label}
                 </Badge>
               </div>
-              <CardTitle className="text-xl">{config.label}</CardTitle>
+              <CardTitle className="text-xl font-bold text-foreground">
+                {config.label}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-baseline gap-2">
-                  <p className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                    {risk.probability_percent.toFixed(1)}%
+                  <p className="text-5xl font-black bg-gradient-to-r from-primary via-primary/80 to-secondary bg-clip-text text-transparent">
+                    {Math.min(100, risk.probability_percent).toFixed(0)}%
                   </p>
-                  <p className="text-sm text-muted-foreground">chance</p>
+                  <p className="text-sm font-semibold text-foreground/60">chance</p>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-foreground/70 leading-relaxed">
                   {config.description}
                 </p>
               </div>
