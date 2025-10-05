@@ -149,10 +149,40 @@ const TravelResults = () => {
 
     // Add markers with climate data
     waypoints.forEach((waypoint, index) => {
+      const climateInfo = climateData[waypoint.id];
+      
+      // Determine temperature condition and color
+      let tempColor = 'hsl(var(--primary))';
+      let tempIcon = '🌡️';
+      if (climateInfo) {
+        const temp = climateInfo.temperature.mean;
+        if (temp < 5) {
+          tempColor = '#60a5fa'; // Cold - blue
+          tempIcon = '❄️';
+        } else if (temp < 15) {
+          tempColor = '#38bdf8'; // Cool - light blue
+          tempIcon = '🌡️';
+        } else if (temp < 25) {
+          tempColor = '#4ade80'; // Mild - green
+          tempIcon = '☀️';
+        } else if (temp < 30) {
+          tempColor = '#fb923c'; // Warm - orange
+          tempIcon = '🌞';
+        } else {
+          tempColor = '#f87171'; // Hot - red
+          tempIcon = '🔥';
+        }
+      }
+
+      // Create marker container
+      const markerContainer = document.createElement('div');
+      markerContainer.style.cssText = 'position: relative; width: 36px; height: 36px;';
+
+      // Create main marker
       const el = document.createElement('div');
       el.style.cssText = `
-        background: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
+        background: ${tempColor};
+        color: white;
         width: 36px;
         height: 36px;
         border-radius: 50%;
@@ -166,8 +196,77 @@ const TravelResults = () => {
         cursor: pointer;
       `;
       el.textContent = (index + 1).toString();
+      markerContainer.appendChild(el);
 
-      const climateInfo = climateData[waypoint.id];
+      // Add climate indicators
+      if (climateInfo) {
+        const indicators = document.createElement('div');
+        indicators.style.cssText = `
+          position: absolute;
+          top: -10px;
+          right: -10px;
+          display: flex;
+          gap: 2px;
+          flex-direction: column;
+        `;
+
+        // Temperature indicator
+        const tempBadge = document.createElement('div');
+        tempBadge.style.cssText = `
+          background: white;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        `;
+        tempBadge.textContent = tempIcon;
+        indicators.appendChild(tempBadge);
+
+        // Wind indicator (if windy)
+        if (climateInfo.wind.speed > 30) {
+          const windBadge = document.createElement('div');
+          windBadge.style.cssText = `
+            background: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            margin-top: 2px;
+          `;
+          windBadge.textContent = '💨';
+          indicators.appendChild(windBadge);
+        }
+
+        // Precipitation indicator (if rainy)
+        if (climateInfo.precipitation.probability > 50) {
+          const rainBadge = document.createElement('div');
+          rainBadge.style.cssText = `
+            background: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            margin-top: 2px;
+          `;
+          rainBadge.textContent = '🌧️';
+          indicators.appendChild(rainBadge);
+        }
+
+        markerContainer.appendChild(indicators);
+      }
+
       const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
         <div style="padding: 12px; min-width: 200px;">
           <h3 style="font-weight: bold; margin-bottom: 8px; font-size: 16px;">${waypoint.name}</h3>
@@ -182,7 +281,7 @@ const TravelResults = () => {
         </div>
       `);
 
-      new maplibregl.Marker({ element: el })
+      new maplibregl.Marker({ element: markerContainer })
         .setLngLat([waypoint.location.lon, waypoint.location.lat])
         .setPopup(popup)
         .addTo(map.current!);
