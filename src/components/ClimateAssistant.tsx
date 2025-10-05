@@ -150,6 +150,22 @@ export const ClimateAssistant = ({ climateData }: ClimateAssistantProps) => {
 
           {/* Input */}
           <div className="p-4 border-t">
+            {isRecording && (
+              <div className="mb-2 flex items-center gap-2 bg-destructive/10 text-destructive px-3 py-2 rounded-lg animate-fade-in">
+                <div className="flex gap-1">
+                  <div className="w-1 h-4 bg-destructive rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-1 h-4 bg-destructive rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-1 h-4 bg-destructive rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                </div>
+                <span className="text-sm font-medium">Recording audio...</span>
+              </div>
+            )}
+            {isTranscribing && (
+              <div className="mb-2 flex items-center gap-2 bg-primary/10 text-primary px-3 py-2 rounded-lg animate-fade-in">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm font-medium">Transcribing your audio...</span>
+              </div>
+            )}
             <div className="flex gap-2">
               <Input
                 value={input}
