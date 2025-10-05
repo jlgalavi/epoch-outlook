@@ -43,34 +43,37 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
-    const targetDate = new Date(date);
-    
+
     // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Check cache first (round coordinates to 2 decimals for caching)
+    const cachedLat = Math.round(lat * 100) / 100;
+    const cachedLon = Math.round(lon * 100) / 100;
     
-    // Check cache first
-    const targetDateStr = targetDate.toISOString().split('T')[0];
-    const { data: cachedData, error: cacheError } = await supabaseClient
+    const { data: cached, error: fetchError } = await supabase
       .from('forecast_cache')
-      .select('response')
-      .eq('lat', lat)
-      .eq('lon', lon)
-      .eq('target_date', targetDateStr)
+      .select('*')
+      .eq('lat', cachedLat)
+      .eq('lon', cachedLon)
+      .eq('target_date', date)
       .eq('day_window', window)
       .eq('units', units)
       .maybeSingle();
-    
-    if (cachedData && !cacheError) {
-      console.log('Returning cached forecast data');
+
+    if (cached && !fetchError) {
+      console.log('Returning cached forecast');
       return new Response(
-        JSON.stringify(cachedData.response),
+        JSON.stringify(cached.response),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log('Cache miss, fetching fresh data');
+    
+    const targetDate = new Date(date);
     
     console.log(`Fetching weather forecast for lat=${lat}, lon=${lon}, date=${date}, window=${window} days`);
     
@@ -319,23 +322,19 @@ serve(async (req) => {
       }
     };
     
-    // Store in cache
-    const { error: insertError } = await supabaseClient
+    // Cache the response
+    await supabase
       .from('forecast_cache')
       .upsert({
-        lat,
-        lon,
-        target_date: targetDateStr,
+        lat: cachedLat,
+        lon: cachedLon,
+        target_date: date,
         day_window: window,
-        units,
+        units: units,
         response: response
       }, {
         onConflict: 'lat,lon,target_date,day_window,units'
       });
-    
-    if (insertError) {
-      console.error('Error caching forecast:', insertError);
-    }
     
     return new Response(
       JSON.stringify(response),
