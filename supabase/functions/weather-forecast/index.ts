@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,6 +45,32 @@ serve(async (req) => {
     }
     
     const targetDate = new Date(date);
+    
+    // Initialize Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+    
+    // Check cache first
+    const targetDateStr = targetDate.toISOString().split('T')[0];
+    const { data: cachedData, error: cacheError } = await supabaseClient
+      .from('forecast_cache')
+      .select('response')
+      .eq('lat', lat)
+      .eq('lon', lon)
+      .eq('target_date', targetDateStr)
+      .eq('day_window', window)
+      .eq('units', units)
+      .maybeSingle();
+    
+    if (cachedData && !cacheError) {
+      console.log('Returning cached forecast data');
+      return new Response(
+        JSON.stringify(cachedData.response),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     console.log(`Fetching weather forecast for lat=${lat}, lon=${lon}, date=${date}, window=${window} days`);
     
@@ -291,6 +318,24 @@ serve(async (req) => {
         uvIndex: Math.round(avgMetrics.uvIndex * 10) / 10
       }
     };
+    
+    // Store in cache
+    const { error: insertError } = await supabaseClient
+      .from('forecast_cache')
+      .upsert({
+        lat,
+        lon,
+        target_date: targetDateStr,
+        day_window: window,
+        units,
+        response: response
+      }, {
+        onConflict: 'lat,lon,target_date,day_window,units'
+      });
+    
+    if (insertError) {
+      console.error('Error caching forecast:', insertError);
+    }
     
     return new Response(
       JSON.stringify(response),
