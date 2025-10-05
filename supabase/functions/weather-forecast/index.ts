@@ -57,8 +57,17 @@ serve(async (req) => {
     
     console.log(`Fetching forecast for date range: ${startDateStr} to ${endDateStr}`);
     
-    // Build Open-Meteo Forecast API URL with comprehensive data
-    const apiUrl = new URL('https://api.open-meteo.com/v1/forecast');
+    // Decide API based on whether the requested range is in the past (archive) or present/future (forecast)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isArchive = endDate < today;
+    const dataSource = isArchive ? 'Open-Meteo Archive API' : 'Open-Meteo Forecast API';
+
+    // Build Open-Meteo API URL with comprehensive data
+    const apiUrl = new URL(isArchive 
+      ? 'https://archive-api.open-meteo.com/v1/archive' 
+      : 'https://api.open-meteo.com/v1/forecast'
+    );
     apiUrl.searchParams.set('latitude', lat.toString());
     apiUrl.searchParams.set('longitude', lon.toString());
     apiUrl.searchParams.set('start_date', startDateStr);
@@ -85,7 +94,7 @@ serve(async (req) => {
     apiUrl.searchParams.set('wind_speed_unit', units === 'metric' ? 'kmh' : 'mph');
     apiUrl.searchParams.set('timezone', 'auto');
     
-    console.log(`Calling Open-Meteo Historical Forecast API: ${apiUrl.toString()}`);
+    console.log(`Calling ${dataSource}: ${apiUrl.toString()}`);
     
     // Fetch from Open-Meteo
     const apiResponse = await fetch(apiUrl.toString());
@@ -121,9 +130,11 @@ serve(async (req) => {
       const Tmin = Math.min(...temps);
       const Tmax = Math.max(...temps);
       
-      // Parse sunrise and sunset
-      const sunrise = new Date(weatherData.daily.sunrise[idx]);
-      const sunset = new Date(weatherData.daily.sunset[idx]);
+      // Parse sunrise and sunset (fallback to 06:00-18:00 if missing)
+      const sunriseStr = weatherData.daily?.sunrise?.[idx];
+      const sunsetStr = weatherData.daily?.sunset?.[idx];
+      const sunrise = sunriseStr ? new Date(sunriseStr) : new Date(`${dayStr}T06:00:00`);
+      const sunset = sunsetStr ? new Date(sunsetStr) : new Date(`${dayStr}T18:00:00`);
       
       // Calculate daytime and nighttime average temperatures
       const sunriseHour = sunrise.getHours() + sunrise.getMinutes() / 60;
@@ -219,7 +230,7 @@ serve(async (req) => {
         window: window,
         units: units,
         model: 'Advanced Climate Models',
-        dataSource: 'Open-Meteo Historical Forecast API',
+        dataSource: dataSource,
         generatedAt: new Date().toISOString(),
       },
       forecast: {
