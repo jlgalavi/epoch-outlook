@@ -113,7 +113,13 @@ const TravelResults = () => {
   };
 
   useEffect(() => {
-    if (!mapContainer.current || waypoints.length === 0 || map.current) return;
+    if (!mapContainer.current || waypoints.length === 0) return;
+
+    // Clean up existing map if it exists
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -141,6 +147,7 @@ const TravelResults = () => {
       zoom: 3,
     });
 
+    // Add markers with climate data
     waypoints.forEach((waypoint, index) => {
       const el = document.createElement('div');
       el.style.cssText = `
@@ -171,7 +178,7 @@ const TravelResults = () => {
               <p style="margin: 4px 0;">🌧️ ${climateInfo.precipitation.probability}% rain chance</p>
               <p style="margin: 4px 0;">💨 ${climateInfo.wind.speed.toFixed(1)} ${climateInfo.wind.unit}</p>
             </div>
-          ` : '<p style="font-size: 12px; color: #999; margin-top: 8px;">No climate data</p>'}
+          ` : '<p style="font-size: 12px; color: #999; margin-top: 8px;">Loading climate data...</p>'}
         </div>
       `);
 
@@ -181,11 +188,14 @@ const TravelResults = () => {
         .addTo(map.current!);
     });
 
+    // Add route line
     if (waypoints.length > 1) {
       const coordinates = waypoints.map(wp => [wp.location.lon, wp.location.lat]);
 
       map.current.on('load', () => {
-        map.current!.addSource('route', {
+        if (!map.current) return;
+        
+        map.current.addSource('route', {
           type: 'geojson',
           data: {
             type: 'Feature',
@@ -197,7 +207,7 @@ const TravelResults = () => {
           },
         });
 
-        map.current!.addLayer({
+        map.current.addLayer({
           id: 'route',
           type: 'line',
           source: 'route',
@@ -206,9 +216,9 @@ const TravelResults = () => {
             'line-cap': 'round',
           },
           paint: {
-            'line-color': '#3b82f6',
-            'line-width': 3,
-            'line-dasharray': [2, 2],
+            'line-color': 'hsl(var(--primary))',
+            'line-width': 4,
+            'line-dasharray': [3, 3],
           },
         });
       });
