@@ -213,9 +213,9 @@ serve(async (req) => {
       uvIndex: dailyMetrics.reduce((sum, d) => sum + d.uv_index_max, 0) / dailyMetrics.length
     };
     
-    // Calculate precipitation probability
+    // Calculate precipitation probability (percentage of days with rain)
     const daysWithRain = dailyMetrics.filter(d => d.precipitation_sum > 0.1).length;
-    const precipProb = Math.round((daysWithRain / dailyMetrics.length) * 100);
+    const precipProb = Math.min(100, Math.round((daysWithRain / dailyMetrics.length) * 100));
     
     // Determine conditions
     const getOutlook = () => {
