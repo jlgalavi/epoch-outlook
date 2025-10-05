@@ -476,24 +476,44 @@ const Results = () => {
 
         {/* Weather Forecast Cards */}
         <section className="grid md:grid-cols-2 gap-6 animate-fade-in">
-          {/* Temperature Card - Redesigned with dynamic colors */}
-          <Card className={`relative overflow-hidden border-3 border-white/50 backdrop-blur-md hover:shadow-2xl transition-all rounded-3xl ${
-            tempData && tempData.p50 > 33 ? 'bg-gradient-to-br from-red-50/80 to-orange-50/80' :
-            tempData && tempData.p50 < 5 ? 'bg-gradient-to-br from-blue-50/80 to-cyan-50/80' :
-            'bg-gradient-to-br from-yellow-50/80 to-orange-50/80'
+          {/* Temperature Card - Modern Interactive Design */}
+          <Card className={`group relative overflow-hidden border-2 backdrop-blur-xl transition-all duration-500 rounded-3xl hover:scale-[1.02] hover:shadow-2xl cursor-pointer ${
+            (() => {
+              const temp = tempData?.p50 || 20;
+              if (temp < 0) return 'border-blue-300/60 bg-gradient-to-br from-blue-100/90 via-blue-50/80 to-cyan-100/90';
+              if (temp < 10) return 'border-cyan-300/60 bg-gradient-to-br from-cyan-100/90 via-sky-50/80 to-blue-100/90';
+              if (temp < 20) return 'border-green-300/60 bg-gradient-to-br from-green-100/90 via-emerald-50/80 to-teal-100/90';
+              if (temp < 25) return 'border-lime-300/60 bg-gradient-to-br from-lime-100/90 via-yellow-50/80 to-green-100/90';
+              if (temp < 30) return 'border-yellow-300/60 bg-gradient-to-br from-yellow-100/90 via-amber-50/80 to-orange-100/90';
+              if (temp < 35) return 'border-orange-300/60 bg-gradient-to-br from-orange-100/90 via-red-50/80 to-orange-100/90';
+              return 'border-red-300/60 bg-gradient-to-br from-red-100/90 via-rose-50/80 to-pink-100/90';
+            })()
           }`}>
-            <div className={`absolute top-0 left-0 right-0 h-1.5 ${
-              tempData && tempData.p50 > 33 ? 'bg-gradient-to-r from-orange-500 via-red-500 to-red-600' :
-              tempData && tempData.p50 < 5 ? 'bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-400' :
-              'bg-gradient-to-r from-green-500 via-yellow-400 to-orange-400'
+            {/* Animated top gradient bar */}
+            <div className={`absolute top-0 left-0 right-0 h-2 transition-all duration-500 group-hover:h-3 ${
+              (() => {
+                const temp = tempData?.p50 || 20;
+                if (temp < 0) return 'bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500';
+                if (temp < 10) return 'bg-gradient-to-r from-cyan-600 via-sky-500 to-blue-500';
+                if (temp < 20) return 'bg-gradient-to-r from-green-600 via-emerald-500 to-teal-500';
+                if (temp < 25) return 'bg-gradient-to-r from-lime-600 via-green-500 to-emerald-500';
+                if (temp < 30) return 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500';
+                if (temp < 35) return 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600';
+                return 'bg-gradient-to-r from-red-600 via-rose-500 to-pink-600';
+              })()
             }`} />
+            
             <CardContent className="pt-8 pb-6 px-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-bold text-foreground">Temperature Forecast</h3>
-                <div className={`p-3 rounded-2xl shadow-lg ${
-                  tempData && tempData.p50 > 33 ? 'bg-gradient-to-br from-red-500 to-orange-600' :
-                  tempData && tempData.p50 < 5 ? 'bg-gradient-to-br from-blue-500 to-cyan-600' :
-                  'bg-gradient-to-br from-yellow-500 to-orange-500'
+                <div className={`p-3 rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 ${
+                  (() => {
+                    const temp = tempData?.p50 || 20;
+                    if (temp < 10) return 'bg-gradient-to-br from-blue-500 to-cyan-600';
+                    if (temp < 20) return 'bg-gradient-to-br from-green-500 to-emerald-600';
+                    if (temp < 30) return 'bg-gradient-to-br from-yellow-500 to-orange-500';
+                    return 'bg-gradient-to-br from-red-500 to-orange-600';
+                  })()
                 }`}>
                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10 2a1 1 0 011 1v6.268l2.121 2.121a1 1 0 01-1.414 1.414L9 10.414V3a1 1 0 011-1z"/>
@@ -503,59 +523,119 @@ const Results = () => {
               </div>
               
               <div className="grid grid-cols-3 gap-6 mb-6">
-                <div className="text-center">
+                {/* Low Temperature */}
+                <div className="text-center transition-all duration-300 hover:scale-110">
                   <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ 
-                    color: tMinData && tMinData.p50 < 5 ? '#2563eb' : tMinData && tMinData.p50 < 15 ? '#0891b2' : '#10b981'
+                    color: (() => {
+                      const temp = tMinData?.p50 || 10;
+                      if (temp < 0) return '#1e40af';
+                      if (temp < 10) return '#0369a1';
+                      if (temp < 20) return '#047857';
+                      return '#65a30d';
+                    })()
                   }}>Low</div>
-                  <div className="text-5xl font-black mb-1" style={{ 
-                    color: tMinData && tMinData.p50 < 5 ? '#2563eb' : tMinData && tMinData.p50 < 15 ? '#0891b2' : '#10b981'
+                  <div className="text-5xl font-black mb-2 transition-all duration-300" style={{ 
+                    color: (() => {
+                      const temp = tMinData?.p50 || 10;
+                      if (temp < 0) return '#1e40af';
+                      if (temp < 10) return '#0369a1';
+                      if (temp < 20) return '#047857';
+                      return '#65a30d';
+                    })()
                   }}>
                     {tMinData?.p50.toFixed(0)}°
                   </div>
-                  <div className={`h-2 rounded-full w-16 mx-auto ${
-                    tMinData && tMinData.p50 < 5 ? 'bg-gradient-to-r from-blue-600 to-blue-400' : 
-                    tMinData && tMinData.p50 < 15 ? 'bg-gradient-to-r from-cyan-600 to-cyan-400' : 
-                    'bg-gradient-to-r from-green-600 to-green-400'
+                  <div className={`h-2.5 rounded-full w-20 mx-auto transition-all duration-500 shadow-md ${
+                    (() => {
+                      const temp = tMinData?.p50 || 10;
+                      if (temp < 0) return 'bg-gradient-to-r from-blue-700 via-blue-500 to-blue-400';
+                      if (temp < 10) return 'bg-gradient-to-r from-cyan-600 via-cyan-500 to-sky-400';
+                      if (temp < 20) return 'bg-gradient-to-r from-green-600 via-emerald-500 to-teal-400';
+                      return 'bg-gradient-to-r from-lime-600 via-green-500 to-emerald-400';
+                    })()
                   }`} />
                 </div>
                 
-                <div className="text-center">
+                {/* Average Temperature */}
+                <div className="text-center transition-all duration-300 hover:scale-110">
                   <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ 
-                    color: tempData && tempData.p50 < 15 ? '#0891b2' : 
-                           tempData && tempData.p50 < 25 ? '#10b981' : 
-                           tempData && tempData.p50 < 30 ? '#f59e0b' : '#f97316'
+                    color: (() => {
+                      const temp = tempData?.p50 || 20;
+                      if (temp < 0) return '#1e40af';
+                      if (temp < 10) return '#0369a1';
+                      if (temp < 20) return '#047857';
+                      if (temp < 25) return '#65a30d';
+                      if (temp < 30) return '#d97706';
+                      if (temp < 35) return '#ea580c';
+                      return '#dc2626';
+                    })()
                   }}>Avg</div>
-                  <div className="text-5xl font-black mb-1" style={{ 
-                    color: tempData && tempData.p50 < 15 ? '#0891b2' : 
-                           tempData && tempData.p50 < 25 ? '#10b981' : 
-                           tempData && tempData.p50 < 30 ? '#f59e0b' : '#f97316'
+                  <div className="text-6xl font-black mb-2 transition-all duration-300" style={{ 
+                    color: (() => {
+                      const temp = tempData?.p50 || 20;
+                      if (temp < 0) return '#1e40af';
+                      if (temp < 10) return '#0369a1';
+                      if (temp < 20) return '#047857';
+                      if (temp < 25) return '#65a30d';
+                      if (temp < 30) return '#d97706';
+                      if (temp < 35) return '#ea580c';
+                      return '#dc2626';
+                    })()
                   }}>
                     {tempData?.p50.toFixed(0)}°
                   </div>
-                  <div className={`h-2 rounded-full w-16 mx-auto ${
-                    tempData && tempData.p50 < 15 ? 'bg-gradient-to-r from-cyan-600 to-cyan-400' :
-                    tempData && tempData.p50 < 25 ? 'bg-gradient-to-r from-green-600 to-green-400' :
-                    tempData && tempData.p50 < 30 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
-                    'bg-gradient-to-r from-orange-600 to-orange-400'
+                  <div className={`h-3 rounded-full w-24 mx-auto transition-all duration-500 shadow-lg ${
+                    (() => {
+                      const temp = tempData?.p50 || 20;
+                      if (temp < 0) return 'bg-gradient-to-r from-blue-700 via-blue-500 to-blue-400';
+                      if (temp < 10) return 'bg-gradient-to-r from-cyan-600 via-sky-500 to-blue-400';
+                      if (temp < 20) return 'bg-gradient-to-r from-green-600 via-emerald-500 to-teal-400';
+                      if (temp < 25) return 'bg-gradient-to-r from-lime-600 via-green-500 to-emerald-400';
+                      if (temp < 30) return 'bg-gradient-to-r from-yellow-600 via-amber-500 to-orange-400';
+                      if (temp < 35) return 'bg-gradient-to-r from-orange-600 via-red-500 to-orange-500';
+                      return 'bg-gradient-to-r from-red-700 via-rose-600 to-red-500';
+                    })()
                   }`} />
                 </div>
                 
-                <div className="text-center">
+                {/* High Temperature */}
+                <div className="text-center transition-all duration-300 hover:scale-110">
                   <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ 
-                    color: tMaxData && tMaxData.p50 > 33 ? '#dc2626' : '#f97316'
+                    color: (() => {
+                      const temp = tMaxData?.p50 || 25;
+                      if (temp < 20) return '#65a30d';
+                      if (temp < 25) return '#ca8a04';
+                      if (temp < 30) return '#d97706';
+                      if (temp < 35) return '#ea580c';
+                      return '#dc2626';
+                    })()
                   }}>High</div>
-                  <div className="text-5xl font-black mb-1" style={{ 
-                    color: tMaxData && tMaxData.p50 > 33 ? '#dc2626' : '#f97316'
+                  <div className="text-5xl font-black mb-2 transition-all duration-300" style={{ 
+                    color: (() => {
+                      const temp = tMaxData?.p50 || 25;
+                      if (temp < 20) return '#65a30d';
+                      if (temp < 25) return '#ca8a04';
+                      if (temp < 30) return '#d97706';
+                      if (temp < 35) return '#ea580c';
+                      return '#dc2626';
+                    })()
                   }}>
                     {tMaxData?.p50.toFixed(0)}°
                   </div>
-                  <div className={`h-2 rounded-full w-16 mx-auto ${
-                    tMaxData && tMaxData.p50 > 33 ? 'bg-gradient-to-r from-red-600 to-red-400' : 'bg-gradient-to-r from-orange-600 to-orange-400'
+                  <div className={`h-2.5 rounded-full w-20 mx-auto transition-all duration-500 shadow-md ${
+                    (() => {
+                      const temp = tMaxData?.p50 || 25;
+                      if (temp < 20) return 'bg-gradient-to-r from-lime-600 via-green-500 to-emerald-400';
+                      if (temp < 25) return 'bg-gradient-to-r from-yellow-600 via-yellow-500 to-amber-400';
+                      if (temp < 30) return 'bg-gradient-to-r from-amber-600 via-orange-500 to-orange-400';
+                      if (temp < 35) return 'bg-gradient-to-r from-orange-600 via-red-500 to-orange-500';
+                      return 'bg-gradient-to-r from-red-700 via-rose-600 to-red-500';
+                    })()
                   }`} />
                 </div>
               </div>
               
-              <div className="bg-white/60 rounded-2xl p-4 border-2 border-white/70">
+              <div className="bg-white/70 rounded-2xl p-4 border-2 border-white/80 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/90 group-hover:shadow-lg">
                 <div className="text-sm font-semibold text-muted-foreground text-center">
                   Expected Range: {tMinData?.p50.toFixed(1)}°C - {tMaxData?.p50.toFixed(1)}°C
                 </div>
@@ -563,22 +643,51 @@ const Results = () => {
             </CardContent>
           </Card>
 
-          {/* Precipitation Card - Redesigned */}
-          <Card className="relative overflow-hidden border-3 border-white/50 bg-gradient-to-br from-sky-50/80 to-blue-50/80 backdrop-blur-md hover:shadow-2xl transition-all rounded-3xl">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 to-sky-400" />
+          {/* Precipitation Card - Modern Interactive Design */}
+          <Card className={`group relative overflow-hidden border-2 backdrop-blur-xl transition-all duration-500 rounded-3xl hover:scale-[1.02] hover:shadow-2xl cursor-pointer ${
+            (() => {
+              const prob = precipProb?.probability_percent || 0;
+              if (prob < 20) return 'border-slate-300/60 bg-gradient-to-br from-slate-50/90 via-gray-50/80 to-blue-50/70';
+              if (prob < 50) return 'border-sky-300/60 bg-gradient-to-br from-sky-50/90 via-blue-50/80 to-cyan-50/90';
+              return 'border-blue-400/60 bg-gradient-to-br from-blue-100/90 via-sky-50/80 to-blue-100/90';
+            })()
+          }`}>
+            {/* Animated top gradient bar */}
+            <div className={`absolute top-0 left-0 right-0 h-2 transition-all duration-500 group-hover:h-3 ${
+              (() => {
+                const prob = precipProb?.probability_percent || 0;
+                if (prob < 20) return 'bg-gradient-to-r from-slate-400 via-gray-400 to-slate-500';
+                if (prob < 50) return 'bg-gradient-to-r from-sky-500 via-blue-500 to-cyan-500';
+                return 'bg-gradient-to-r from-blue-600 via-sky-500 to-blue-600';
+              })()
+            }`} />
+            
             <CardContent className="pt-8 pb-6 px-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-bold text-foreground">Precipitation Forecast</h3>
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-sky-400 rounded-2xl shadow-lg">
+                <div className={`p-3 rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1 ${
+                  (() => {
+                    const prob = precipProb?.probability_percent || 0;
+                    if (prob < 20) return 'bg-gradient-to-br from-slate-500 to-gray-600';
+                    if (prob < 50) return 'bg-gradient-to-br from-sky-500 to-blue-600';
+                    return 'bg-gradient-to-br from-blue-600 to-cyan-700';
+                  })()
+                }`}>
                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v9A2.5 2.5 0 005.5 17h9a2.5 2.5 0 002.5-2.5v-9A2.5 2.5 0 0014.5 3h-9zm0 2a.5.5 0 00-.5.5v9a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-9a.5.5 0 00-.5-.5h-9z" clipRule="evenodd"/>
-                    <path d="M10 7a1 1 0 011 1v4a1 1 0 11-2 0V8a1 1 0 011-1z"/>
+                    <path d="M10 3a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15.5V18a1 1 0 11-2 0v-2.5a2 2 0 00-2-2h-2a2 2 0 00-2 2V18a1 1 0 11-2 0v-2.5a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 5.323V4a1 1 0 011-1z"/>
                   </svg>
                 </div>
               </div>
               
               <div className="text-center mb-6">
-                <div className="text-8xl font-black bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent mb-3">
+                <div className={`text-8xl font-black mb-3 transition-all duration-500 bg-clip-text text-transparent ${
+                  (() => {
+                    const prob = precipProb?.probability_percent || 0;
+                    if (prob < 20) return 'bg-gradient-to-r from-slate-600 to-gray-600';
+                    if (prob < 50) return 'bg-gradient-to-r from-sky-600 to-blue-600';
+                    return 'bg-gradient-to-r from-blue-700 to-cyan-700';
+                  })()
+                }`}>
                   {(precipProb?.probability_percent || 0).toFixed(0)}%
                 </div>
                 <div className="text-lg font-bold text-muted-foreground uppercase tracking-wider">
@@ -586,17 +695,35 @@ const Results = () => {
                 </div>
               </div>
               
-              <div className="space-y-3">
-                <div className="bg-white/60 rounded-2xl p-4 border-2 border-white/70">
+              <div className="space-y-4">
+                <div className="bg-white/70 rounded-2xl p-4 border-2 border-white/80 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/90 group-hover:shadow-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold text-muted-foreground">Expected Amount</span>
-                    <span className="text-2xl font-black text-foreground">{precipData?.p50.toFixed(1)} mm</span>
+                    <span className={`text-2xl font-black transition-colors duration-300 ${
+                      (() => {
+                        const amount = precipData?.p50 || 0;
+                        if (amount < 5) return 'text-slate-700';
+                        if (amount < 15) return 'text-sky-700';
+                        return 'text-blue-700';
+                      })()
+                    }`}>{precipData?.p50.toFixed(1)} mm</span>
                   </div>
                 </div>
                 
-                <div className="bg-white/60 rounded-2xl overflow-hidden border-2 border-white/70">
-                  <div className="h-3 bg-gradient-to-r from-blue-600 to-sky-400" 
-                       style={{ width: `${Math.min(100, (precipProb?.probability_percent || 0))}%` }} />
+                {/* Animated progress bar */}
+                <div className="relative bg-white/70 rounded-2xl overflow-hidden border-2 border-white/80 backdrop-blur-sm h-4 shadow-inner">
+                  <div 
+                    className={`h-full transition-all duration-1000 ease-out shadow-lg ${
+                      (() => {
+                        const prob = precipProb?.probability_percent || 0;
+                        if (prob < 20) return 'bg-gradient-to-r from-slate-400 via-gray-500 to-slate-500';
+                        if (prob < 50) return 'bg-gradient-to-r from-sky-500 via-blue-500 to-cyan-500';
+                        return 'bg-gradient-to-r from-blue-600 via-sky-500 to-blue-600';
+                      })()
+                    }`}
+                    style={{ width: `${Math.min(100, (precipProb?.probability_percent || 0))}%` }} 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
                 </div>
               </div>
             </CardContent>
