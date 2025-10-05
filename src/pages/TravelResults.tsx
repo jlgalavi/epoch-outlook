@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Navigation, MapPin, Calendar as CalendarIcon, Loader2, ArrowRight } from "lucide-react";
+import { Navigation, MapPin, Calendar as CalendarIcon, Loader2, ArrowDown, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -354,9 +354,15 @@ const TravelResults = () => {
               Your Travel Plan
             </h1>
           </div>
-          <Button variant="ghost" onClick={() => navigate("/travel")}>
-            Edit Route
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
+              <Home className="h-4 w-4" />
+              Home
+            </Button>
+            <Button variant="ghost" onClick={() => navigate("/travel")}>
+              Edit Route
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -379,8 +385,8 @@ const TravelResults = () => {
             {waypoints.map((waypoint, index) => (
               <div key={waypoint.id} className="relative">
                 {index < waypoints.length - 1 && (
-                  <div className="absolute left-1/2 -bottom-3 transform -translate-x-1/2 z-10">
-                    <ArrowRight className="h-6 w-6 text-primary rotate-90" />
+                  <div className="absolute left-1/2 -bottom-6 transform -translate-x-1/2 z-10">
+                    <ArrowDown className="h-8 w-8 text-primary drop-shadow-lg" />
                   </div>
                 )}
 
