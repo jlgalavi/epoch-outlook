@@ -141,12 +141,20 @@ serve(async (req) => {
     }
 
     const result = await response.json();
-    console.log('Transcription successful');
+    console.log('Google Cloud API full response:', JSON.stringify(result, null, 2));
 
     // Extract transcription text
     const transcription = result.results
       ?.map((r: any) => r.alternatives?.[0]?.transcript)
+      .filter((t: string) => t) // Remove empty strings
       .join(' ') || '';
+
+    console.log('Extracted transcription:', transcription);
+    console.log('Transcription length:', transcription.length);
+
+    if (!transcription) {
+      console.warn('No transcription found in response');
+    }
 
     return new Response(
       JSON.stringify({ text: transcription }),
