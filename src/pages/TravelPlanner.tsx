@@ -4,14 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Plus, Trash2, Navigation } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MapPin, Plus, Trash2, Navigation, CalendarIcon } from "lucide-react";
 import { LocationPicker } from "@/components/LocationPicker";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Waypoint {
   id: string;
   name: string;
   location: { lat: number; lon: number };
+  date?: Date;
 }
 
 const TravelPlanner = () => {
@@ -20,6 +25,7 @@ const TravelPlanner = () => {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [currentName, setCurrentName] = useState("");
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [currentDate, setCurrentDate] = useState<Date>();
 
   const handleLocationChange = async (location: { lat: number; lon: number } | null) => {
     setCurrentLocation(location);
@@ -67,11 +73,13 @@ const TravelPlanner = () => {
       id: Date.now().toString(),
       name: currentName,
       location: currentLocation,
+      date: currentDate,
     };
 
     setWaypoints([...waypoints, newWaypoint]);
     setCurrentName("");
     setCurrentLocation(null);
+    setCurrentDate(undefined);
 
     toast({
       title: "Location added",
@@ -93,10 +101,9 @@ const TravelPlanner = () => {
       return;
     }
 
-    toast({
-      title: "Route planned",
-      description: `Your route includes ${waypoints.length} destinations.`,
-    });
+    // Navigate to results page with waypoint data
+    const routeData = encodeURIComponent(JSON.stringify(waypoints));
+    navigate(`/travel-results?route=${routeData}`);
   };
 
   return (
@@ -146,6 +153,34 @@ const TravelPlanner = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>Visit Date (Optional)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !currentDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {currentDate ? format(currentDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={currentDate}
+                      onSelect={setCurrentDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                      disabled={(date) => date < new Date()}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
               <Button onClick={addWaypoint} className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Add to Route
@@ -179,6 +214,11 @@ const TravelPlanner = () => {
                         <p className="text-xs text-muted-foreground">
                           {waypoint.location.lat.toFixed(4)}, {waypoint.location.lon.toFixed(4)}
                         </p>
+                        {waypoint.date && (
+                          <p className="text-xs text-primary mt-1">
+                            {format(waypoint.date, "PPP")}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <Button
