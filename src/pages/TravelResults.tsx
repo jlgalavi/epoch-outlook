@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,6 +6,8 @@ import { Navigation, MapPin, Calendar as CalendarIcon, Loader2, ArrowRight } fro
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 interface Waypoint {
   id: string;
@@ -43,13 +45,14 @@ const TravelResults = () => {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [climateData, setClimateData] = useState<Record<string, ClimateData>>({});
   const [loading, setLoading] = useState(true);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<maplibregl.Map | null>(null);
 
   useEffect(() => {
     const routeData = searchParams.get("route");
     if (routeData) {
       try {
         const parsed = JSON.parse(decodeURIComponent(routeData));
-        // Convert date strings back to Date objects
         const waypointsWithDates = parsed.map((wp: any) => ({
           ...wp,
           date: wp.date ? new Date(wp.date) : undefined,
@@ -109,6 +112,118 @@ const TravelResults = () => {
     setLoading(false);
   };
 
+  useEffect(() => {
+    if (!mapContainer.current || waypoints.length === 0 || map.current) return;
+
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: {
+        version: 8,
+        sources: {
+          'osm-tiles': {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+          },
+        },
+        layers: [
+          {
+            id: 'osm-tiles',
+            type: 'raster',
+            source: 'osm-tiles',
+            minzoom: 0,
+            maxzoom: 19,
+          },
+        ],
+      },
+      center: [waypoints[0].location.lon, waypoints[0].location.lat],
+      zoom: 3,
+    });
+
+    waypoints.forEach((waypoint, index) => {
+      const el = document.createElement('div');
+      el.style.cssText = `
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        border: 3px solid white;
+        cursor: pointer;
+      `;
+      el.textContent = (index + 1).toString();
+
+      const climateInfo = climateData[waypoint.id];
+      const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
+        <div style="padding: 12px; min-width: 200px;">
+          <h3 style="font-weight: bold; margin-bottom: 8px; font-size: 16px;">${waypoint.name}</h3>
+          ${waypoint.date ? `<p style="font-size: 13px; color: #666; margin-bottom: 8px;">${format(waypoint.date, "PPP")}</p>` : ''}
+          ${climateInfo ? `
+            <div style="border-top: 1px solid #e5e5e5; padding-top: 8px; font-size: 13px;">
+              <p style="margin: 4px 0;">🌡️ ${climateInfo.temperature.mean.toFixed(1)}${climateInfo.temperature.unit}</p>
+              <p style="margin: 4px 0;">🌧️ ${climateInfo.precipitation.probability}% rain chance</p>
+              <p style="margin: 4px 0;">💨 ${climateInfo.wind.speed.toFixed(1)} ${climateInfo.wind.unit}</p>
+            </div>
+          ` : '<p style="font-size: 12px; color: #999; margin-top: 8px;">No climate data</p>'}
+        </div>
+      `);
+
+      new maplibregl.Marker({ element: el })
+        .setLngLat([waypoint.location.lon, waypoint.location.lat])
+        .setPopup(popup)
+        .addTo(map.current!);
+    });
+
+    if (waypoints.length > 1) {
+      const coordinates = waypoints.map(wp => [wp.location.lon, wp.location.lat]);
+
+      map.current.on('load', () => {
+        map.current!.addSource('route', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: coordinates,
+            },
+          },
+        });
+
+        map.current!.addLayer({
+          id: 'route',
+          type: 'line',
+          source: 'route',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+          },
+          paint: {
+            'line-color': '#3b82f6',
+            'line-width': 3,
+            'line-dasharray': [2, 2],
+          },
+        });
+      });
+
+      const bounds = new maplibregl.LngLatBounds();
+      waypoints.forEach(wp => bounds.extend([wp.location.lon, wp.location.lat]));
+      map.current.fitBounds(bounds, { padding: 80 });
+    }
+
+    return () => {
+      map.current?.remove();
+      map.current = null;
+    };
+  }, [waypoints, climateData]);
+
   if (waypoints.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[hsl(200_100%_88%)] via-[hsl(190_95%_85%)] to-[hsl(45_100%_88%)] flex items-center justify-center">
@@ -122,7 +237,6 @@ const TravelResults = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[hsl(200_100%_88%)] via-[hsl(190_95%_85%)] to-[hsl(45_100%_88%)]">
-      {/* Header */}
       <header className="w-full py-4 px-6 border-b border-white/20 bg-white/30 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -137,133 +251,133 @@ const TravelResults = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="p-6">
-        <div className="max-w-5xl mx-auto space-y-6">
-          {/* Route Overview */}
-          <Card className="p-6 shadow-xl border-white/40 bg-white/40 backdrop-blur-md rounded-2xl">
-            <h2 className="text-xl font-semibold mb-2">Route Overview</h2>
-            <p className="text-muted-foreground mb-4">
-              {waypoints.length} destinations • {waypoints.filter(w => w.date).length} with dates
-            </p>
-          </Card>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="lg:sticky lg:top-6 h-[600px]">
+            <Card className="h-full shadow-xl border-white/40 bg-white/40 backdrop-blur-md rounded-2xl overflow-hidden">
+              <div ref={mapContainer} className="w-full h-full" />
+            </Card>
+          </div>
 
-          {/* Waypoints with Climate Data */}
-          {waypoints.map((waypoint, index) => (
-            <div key={waypoint.id} className="relative">
-              {/* Connector Arrow */}
-              {index < waypoints.length - 1 && (
-                <div className="absolute left-1/2 -bottom-3 transform -translate-x-1/2 z-10">
-                  <ArrowRight className="h-6 w-6 text-primary rotate-90" />
-                </div>
-              )}
+          <div className="space-y-6">
+            <Card className="p-6 shadow-xl border-white/40 bg-white/40 backdrop-blur-md rounded-2xl">
+              <h2 className="text-xl font-semibold mb-2">Route Overview</h2>
+              <p className="text-muted-foreground">
+                {waypoints.length} destinations • {waypoints.filter(w => w.date).length} with dates
+              </p>
+            </Card>
 
-              <Card className="p-6 shadow-xl border-white/40 bg-white/40 backdrop-blur-md rounded-2xl">
-                <div className="flex items-start gap-4">
-                  {/* Step Number */}
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-semibold shrink-0">
-                    {index + 1}
+            {waypoints.map((waypoint, index) => (
+              <div key={waypoint.id} className="relative">
+                {index < waypoints.length - 1 && (
+                  <div className="absolute left-1/2 -bottom-3 transform -translate-x-1/2 z-10">
+                    <ArrowRight className="h-6 w-6 text-primary rotate-90" />
                   </div>
+                )}
 
-                  <div className="flex-1 space-y-4">
-                    {/* Location Info */}
-                    <div>
-                      <h3 className="text-xl font-semibold flex items-center gap-2">
-                        <MapPin className="h-5 w-5 text-primary" />
-                        {waypoint.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {waypoint.location.lat.toFixed(4)}, {waypoint.location.lon.toFixed(4)}
-                      </p>
-                      {waypoint.date && (
-                        <p className="text-sm text-primary mt-1 flex items-center gap-1">
-                          <CalendarIcon className="h-4 w-4" />
-                          {format(waypoint.date, "PPP")}
-                        </p>
-                      )}
+                <Card className="p-6 shadow-xl border-white/40 bg-white/40 backdrop-blur-md rounded-2xl">
+                  <div className="flex items-start gap-4">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-semibold shrink-0">
+                      {index + 1}
                     </div>
 
-                    {/* Climate Data */}
-                    {waypoint.date && (
-                      <div className="mt-4 p-4 bg-white/50 rounded-lg border border-white/60">
-                        {loading ? (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Loading climate data...</span>
-                          </div>
-                        ) : climateData[waypoint.id] ? (
-                          <div className="space-y-3">
-                            <div>
-                              <h4 className="font-semibold text-sm mb-2">Weather Outlook</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {climateData[waypoint.id].summary.outlook}
-                              </p>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4">
-                              <div>
-                                <p className="text-xs text-muted-foreground">Temperature</p>
-                                <p className="font-semibold">
-                                  {climateData[waypoint.id].temperature.mean.toFixed(1)}
-                                  {climateData[waypoint.id].temperature.unit}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {climateData[waypoint.id].temperature.min.toFixed(0)} - {climateData[waypoint.id].temperature.max.toFixed(0)}
-                                  {climateData[waypoint.id].temperature.unit}
-                                </p>
-                              </div>
-
-                              <div>
-                                <p className="text-xs text-muted-foreground">Precipitation</p>
-                                <p className="font-semibold">
-                                  {climateData[waypoint.id].precipitation.probability}%
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {climateData[waypoint.id].precipitation.amount.toFixed(1)} {climateData[waypoint.id].precipitation.unit}
-                                </p>
-                              </div>
-
-                              <div>
-                                <p className="text-xs text-muted-foreground">Wind</p>
-                                <p className="font-semibold">
-                                  {climateData[waypoint.id].wind.speed.toFixed(1)} {climateData[waypoint.id].wind.unit}
-                                </p>
-                              </div>
-                            </div>
-
-                            {climateData[waypoint.id].precipitation.probability > 50 && (
-                              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded text-xs text-blue-900 dark:text-blue-100">
-                                ⚠️ High chance of rain - pack an umbrella!
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            No climate data available for this location
+                    <div className="flex-1 space-y-4">
+                      <div>
+                        <h3 className="text-xl font-semibold flex items-center gap-2">
+                          <MapPin className="h-5 w-5 text-primary" />
+                          {waypoint.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {waypoint.location.lat.toFixed(4)}, {waypoint.location.lon.toFixed(4)}
+                        </p>
+                        {waypoint.date && (
+                          <p className="text-sm text-primary mt-1 flex items-center gap-1">
+                            <CalendarIcon className="h-4 w-4" />
+                            {format(waypoint.date, "PPP")}
                           </p>
                         )}
                       </div>
-                    )}
 
-                    {!waypoint.date && (
-                      <p className="text-sm text-muted-foreground italic">
-                        No date set for this destination
-                      </p>
-                    )}
+                      {waypoint.date && (
+                        <div className="p-4 bg-white/50 rounded-lg border border-white/60">
+                          {loading ? (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Loading climate data...</span>
+                            </div>
+                          ) : climateData[waypoint.id] ? (
+                            <div className="space-y-3">
+                              <div>
+                                <h4 className="font-semibold text-sm mb-2">Weather Outlook</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {climateData[waypoint.id].summary.outlook}
+                                </p>
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Temperature</p>
+                                  <p className="font-semibold">
+                                    {climateData[waypoint.id].temperature.mean.toFixed(1)}
+                                    {climateData[waypoint.id].temperature.unit}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {climateData[waypoint.id].temperature.min.toFixed(0)} - {climateData[waypoint.id].temperature.max.toFixed(0)}
+                                    {climateData[waypoint.id].temperature.unit}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Precipitation</p>
+                                  <p className="font-semibold">
+                                    {climateData[waypoint.id].precipitation.probability}%
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {climateData[waypoint.id].precipitation.amount.toFixed(1)} {climateData[waypoint.id].precipitation.unit}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Wind</p>
+                                  <p className="font-semibold">
+                                    {climateData[waypoint.id].wind.speed.toFixed(1)} {climateData[waypoint.id].wind.unit}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {climateData[waypoint.id].precipitation.probability > 50 && (
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded text-xs text-blue-900 dark:text-blue-100">
+                                  ⚠️ High chance of rain - pack an umbrella!
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No climate data available for this location
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {!waypoint.date && (
+                        <p className="text-sm text-muted-foreground italic">
+                          No date set for this destination
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </div>
-          ))}
+                </Card>
+              </div>
+            ))}
 
-          {/* Actions */}
-          <div className="flex gap-4 justify-center pt-6">
-            <Button variant="outline" onClick={() => navigate("/travel")} size="lg">
-              Edit Route
-            </Button>
-            <Button onClick={() => navigate("/")} size="lg">
-              Plan Another Trip
-            </Button>
+            <div className="flex gap-4 justify-center pt-6">
+              <Button variant="outline" onClick={() => navigate("/travel")} size="lg">
+                Edit Route
+              </Button>
+              <Button onClick={() => navigate("/")} size="lg">
+                Plan Another Trip
+              </Button>
+            </div>
           </div>
         </div>
       </main>
