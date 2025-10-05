@@ -97,7 +97,15 @@ serve(async (req) => {
       throw new Error('GOOGLE_CLOUD_CREDENTIALS not configured');
     }
 
-    const credentials = JSON.parse(credentialsJson);
+    let credentials;
+    try {
+      credentials = JSON.parse(credentialsJson);
+      console.log('Successfully parsed credentials');
+    } catch (parseError) {
+      console.error('Failed to parse credentials:', parseError);
+      console.error('Credentials content (first 50 chars):', credentialsJson.substring(0, 50));
+      throw new Error('Invalid GOOGLE_CLOUD_CREDENTIALS format');
+    }
     
     // Get access token
     const accessToken = await getAccessToken(credentials);
