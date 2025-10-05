@@ -21,6 +21,29 @@ const TravelPlanner = () => {
   const [currentName, setCurrentName] = useState("");
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lon: number } | null>(null);
 
+  const handleLocationChange = async (location: { lat: number; lon: number } | null) => {
+    setCurrentLocation(location);
+    
+    if (location) {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lon}`
+        );
+        const data = await response.json();
+        
+        if (data && data.display_name) {
+          // Extract a shorter, more readable name
+          const name = data.name || data.address?.city || data.address?.town || 
+                      data.address?.village || data.address?.country || 
+                      data.display_name.split(',')[0];
+          setCurrentName(name);
+        }
+      } catch (error) {
+        console.error("Error fetching location name:", error);
+      }
+    }
+  };
+
   const addWaypoint = () => {
     if (!currentName.trim()) {
       toast({
@@ -118,7 +141,7 @@ const TravelPlanner = () => {
                 <Label>Select on Map</Label>
                 <LocationPicker
                   value={currentLocation || undefined}
-                  onChange={setCurrentLocation}
+                  onChange={handleLocationChange}
                   searchEnabled={true}
                 />
               </div>
